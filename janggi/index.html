@@ -237,7 +237,7 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="../net.js"></script>
+<script src="../net.js?v=20261128003955"></script>
 <script>
 // 장기 엔진: 규칙 + AI (화면과 분리)
 (function (root) {
@@ -782,7 +782,7 @@ $('resignBtn').onclick = ()=>{
 $('gHome').onclick = ()=>{ if (G && G.mode==='online'){ sel=-1; show('home'); return; } token++; thinking=false; $('think').hidden=true; sel=-1; show('home'); };
 // ---------- 온라인 대전 ----------
 let netRoom = null, netStopFn = null, netPres = null, netOn = false, netTs = 0, netTl = 0;
-if (window.NET) NET.clock({
+if (window.NET && NET.clock) NET.clock({
   state: ()=> (G && G.mode==='online' && screen==='game') ? { tl:netTl, ts:netTs, active: !G.over && G.ready, mine: P.turn===G.human, key: G.round+':'+G.moves.length } : null,
   mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(1-G.human, 'time'); },
   theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }

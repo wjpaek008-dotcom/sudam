@@ -324,7 +324,7 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <div class="loading" id="loading"><div class="spin"></div><span id="loadTxt">준비 중…</span></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="../net.js"></script>
+<script src="../net.js?v=20261128003955"></script>
 <script>
 // 타일톡 규칙 엔진 — 화면과 분리 (node 에서도 테스트 가능)
 (function (root) {
@@ -1386,7 +1386,7 @@ function showResult(){
 // ---------- 온라인 대전 ----------
 let netRoom = null, netStopFn = null, netPres = null, netOn = false, netTs = 0, netTl = 0;
 // 한 수 시간 제한: 시간이 다 되면 자동으로 1장 뽑고 넘김. 차례인 사람이 나가 있으면 다음 사람이 대신 처리
-if (window.NET) NET.clock({
+if (window.NET && NET.clock) NET.clock({
   state: ()=> (S && S.mode==='online' && !S.wait && screen==='game') ? { tl:netTl, ts:netTs, active: !S.over, mine: S.turn===0, key: S.round+':'+S.v } : null,
   mineOut: ()=>{
     if (S.turn!==0 || S.over) return;

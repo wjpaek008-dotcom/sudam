@@ -1,5 +1,5 @@
 /* 수담 게임방 — 오프라인 실행 + 자동 업데이트 */
-const V = 'sudam-20261128001143';
+const V = 'sudam-20261128003955';
 const CORE = ['./', './index.html', './net.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png',
   './baduk/', './janggi/', './omok/', './tile/', './chess/', './sudoku/', './vendor/firebase-app-compat.js', './vendor/firebase-database-compat.js'];
 self.addEventListener('install', e => {
@@ -15,10 +15,16 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(req).then(r => { const cp = r.clone(); caches.open(V).then(c => c.put(req, cp)); return r; }).catch(() => caches.match(req)));
     return;
   }
-  // 저장된 것을 바로 보여주고, 뒤에서 새 버전을 받아둠 (다음에 열 때 반영)
+  // 페이지·스크립트: 인터넷이 되면 항상 새 버전, 안 되면 저장해둔 것 (오프라인 실행)
   e.respondWith(caches.open(V).then(async c => {
-    const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
-    const net = fetch(req).then(r => { if (r && r.ok) c.put(req.mode === 'navigate' ? new Request(url.origin + url.pathname) : req, r.clone()); return r; }).catch(() => null);
-    return hit || (await net) || new Response('오프라인이에요', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    const key = req.mode === 'navigate' ? new Request(url.origin + url.pathname) : req;
+    try{
+      const r = await fetch(req, { cache:'no-cache' });
+      if (r && r.ok) c.put(key, r.clone());
+      return r;
+    }catch(err){
+      const hit = await c.match(key, { ignoreSearch: true });
+      return hit || new Response('오프라인이에요', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
   }));
 });

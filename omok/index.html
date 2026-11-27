@@ -273,7 +273,7 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="../net.js"></script>
+<script src="../net.js?v=20261128003955"></script>
 <script>
 (function(root){
 'use strict';
@@ -788,7 +788,7 @@ const NG = 'omok';
 const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
 let netOn = false, netTs = 0, netTl = 0;
 // 한 수 시간 제한
-if (window.NET) NET.clock({
+if (window.NET && NET.clock) NET.clock({
   state: ()=> (G && G.mode==='online' && screen==='game') ? { tl:netTl, ts:netTs, active: !G.over && !B.winner && !ending, mine: B.toMove===G.human, key: G.round+':'+G.moves.length } : null,
   mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(3-G.human, 'time'); },
   theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }

@@ -269,7 +269,7 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="../net.js"></script>
+<script src="../net.js?v=20261128003955"></script>
 <script>
 // 바둑 엔진: 규칙(따내기·착수금지·패), 계가, MCTS AI — 화면과 분리
 (function (root) {
@@ -994,7 +994,7 @@ $('gHome').onclick = ()=>{ if (G && G.mode==='online'){ show('home'); return; } 
 
 // ---------- 온라인 대전 ----------
 let netRoom = null, netStopFn = null, netPres = null, netOn = false, netWaitScore = false, netTs = 0, netTl = 0;
-if (window.NET) NET.clock({
+if (window.NET && NET.clock) NET.clock({
   state: ()=> (G && G.mode==='online' && screen==='game') ? { tl:netTl, ts:netTs, active: !G.over && !scoring && !netWaitScore && B.passes<2, mine: B.toMove===G.human, key: G.round+':'+G.moves.length } : null,
   mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(3-G.human, 'time'); },
   theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }

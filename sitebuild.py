@@ -1,4 +1,5 @@
-import os, re, subprocess
+import os, re, subprocess, time
+BUILD=time.strftime('%Y%m%d%H%M%S')
 R='/home/claude/sudam-site/'
 for cmd in ['python3 /home/claude/omok/build.py','python3 /home/claude/baduk/build.py','python3 /home/claude/janggi/build.py','python3 /home/claude/tiletalk/build.py','python3 /home/claude/chess/build.py']:
     subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL)
@@ -9,9 +10,11 @@ TAIL = "<script>if('serviceWorker' in navigator) navigator.serviceWorker.registe
 for g in ['omok','baduk','janggi','tile','chess','sudoku']:
     p=R+g+'/index.html'; s=open(p).read()
     if 'manifest.webmanifest' not in s: s=s.replace('</head>', HEAD+'\n</head>',1)
+    s=re.sub(r'<script src="\.\./net\.js(\?v=\d+)?"></script>', '<script src="../net.js?v=%s"></script>' % BUILD, s)
     if "register('../sw.js')" not in s:
         i=s.rfind('</body>'); s=s[:i]+TAIL+'\n'+s[i:]
     open(p,'w').write(s)
+h=open(R+'index.html').read(); h=re.sub(r'<script src="net\.js(\?v=\d+)?"></script>','<script src="net.js?v=%s"></script>' % BUILD,h); open(R+'index.html','w').write(h)
 # 버전 올리기 (sw 캐시 갱신)
 import time
 sw=open(R+'sw.js').read(); sw=re.sub(r"const V = 'sudam-[^']*';", "const V = 'sudam-%s';" % time.strftime('%Y%m%d%H%M%S'), sw); open(R+'sw.js','w').write(sw)
