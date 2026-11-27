@@ -130,6 +130,14 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
   #game > :not(.goban),#lesson > :not(.goban){zoom:1.2}
   #game > .goban,#lesson > .goban{width:min(calc((100dvh - 48px)), calc(100vw - 560px))}
 }
+.rpctl{display:grid;grid-template-columns:1fr 1fr 1.4fr 1fr 1fr;gap:8px}
+.rpctl .tool{font-size:18px}.rpctl .rpmain{background:var(--ink);color:#F7EFDD;border-color:var(--ink)}
+.rpbtn{flex-shrink:0;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;background:var(--paper2);border:1px solid var(--line);color:var(--ink)}
+@media (min-width:900px) and (min-height:560px){
+  .screen#replay.on{display:grid;grid-template-columns:auto 380px;grid-auto-rows:min-content;column-gap:32px;row-gap:12px;justify-content:center;align-content:center;min-height:100dvh;padding:24px;max-width:none}
+  #replay > *{grid-column:2}
+  #replay > #rpBoard{grid-column:1;grid-row:1 / span 8;align-self:center;width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+}
 </style>
 <link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icons/favicon.png"><link rel="apple-touch-icon" href="../icons/apple-180.png"><meta name="theme-color" content="#A8322D">
 </head>
@@ -188,6 +196,7 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
   <div class="goban" id="rBoard" style="width:78%;align-self:center"></div>
   <div style="flex-grow:1"></div>
   <button class="btn ink" id="rAgain">한 판 더</button>
+  <button class="btn plain" id="rReplay">복기 보기</button>
   <button class="btn plain" data-home>홈으로</button>
 </section>
 
@@ -209,6 +218,19 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
 </section>
 
 <!-- 기록 -->
+<!-- 복기 -->
+<section class="screen" id="replay" style="gap:10px">
+  <div class="row between"><button class="icon-btn" id="rpBack" aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div style="text-align:center;min-width:0"><div class="title" id="rpTitle" style="font-size:18px">복기</div><div class="muted" id="rpSub" style="font-size:12px"></div></div>
+    <div class="muted" id="rpCount" style="font-size:13px;min-width:44px;text-align:right">0 / 0</div></div>
+  <div class="goban" id="rpBoard" style="cursor:pointer"></div>
+  <div class="status" style="justify-content:center"><span id="rpDesc"></span></div>
+  <input type="range" id="rpSlider" min="0" max="0" value="0" style="width:100%;accent-color:var(--seal)" aria-label="수 이동">
+  <div class="rpctl"><button class="tool" id="rpFirst" aria-label="처음">⏮</button><button class="tool" id="rpPrev" aria-label="이전 수">◀</button><button class="tool rpmain" id="rpPlay" aria-label="자동 재생"></button><button class="tool" id="rpNext" aria-label="다음 수">▶</button><button class="tool" id="rpLast" aria-label="끝">⏭</button></div>
+  <div class="row" style="gap:8px"><span class="lbl" style="flex-shrink:0">자동 재생 속도</span><div class="chips" id="rpSpeed" style="flex-grow:1"><button data-v="1">1배</button><button data-v="2">2배</button><button data-v="4">4배</button><button data-v="8">8배</button></div></div>
+  <div class="muted" style="font-size:12px;text-align:center">판을 누르거나 Enter·→ 키로 한 수씩 · ← 키로 한 수 뒤로</div>
+</section>
+
 <section class="screen" id="records">
   <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">기록</span></div>
   <div id="recBody" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -273,7 +295,7 @@ button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="../net.js?v=20261128014731"></script>
+<script src="../net.js?v=20261128022611"></script>
 <script>
 (function(root){
 'use strict';
@@ -762,7 +784,7 @@ function logResult(winner, how){
   }
   if (G.mode==='online'){ entry.result = !winner ? 'draw' : winner===G.human ? 'win' : 'lose'; entry.opp = G.opp; entry.code = G.code; }
   entry.change = change;
-  rec.games.unshift(entry); if (rec.games.length>300) rec.games.length=300;
+  rpKeep(entry); rec.games.unshift(entry); if (rec.games.length>300) rec.games.length=300;
   store.set('rec', rec);
   return change;
 }
@@ -1077,6 +1099,7 @@ function renderRecords(){
     return '<div>'+res+'<span style="flex-grow:1">'+(g.mode==='pvp'?'둘이서':'AI '+LVN[g.level])+' · '+g.n+'줄 · '+g.moves+'수'+(g.mode==='ai'?' · '+(g.human===BLACK?'흑':'백'):'')+'<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 삼삼 '+(g.ban==='black'?'흑만':'모두')+(g.change?(g.change>0?' · ▲1급':' · ▼1급'):'')+'</span></span><span class="muted">'+how+'</span></div>'; }).join('')+'</div>';
   else h += '<div class="card muted" style="text-align:center">아직 대국 기록이 없어요</div>';
   $('recBody').innerHTML = h;
+  document.querySelectorAll('#recBody .hist > div').forEach((row,i)=>{ const g=rec.games[i]; if (g && g.mv && g.mv.length){ const b=document.createElement('button'); b.className='rpbtn'; b.textContent='복기'; b.onclick=ev=>{ ev.stopPropagation(); openReplay(g); }; row.appendChild(b); } });
 }
 
 // ---------- 설정 ----------
@@ -1084,6 +1107,61 @@ function renderSettings(){ document.querySelectorAll('[data-set]').forEach(b=>b.
 $('openSettings').onclick = ()=>{ renderSettings(); $('settings').classList.add('on'); };
 document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{ const k=b.dataset.set; settings[k]=!settings[k]; store.set('settings',settings); renderSettings(); if (screen==='game') renderGame(); });
 
+// ---------- 복기 ----------
+let RP = null;
+function rpSpeedName(v){ return v+'배'; }
+function openReplay(entry){
+  const A = replayAdapter(entry); if (!A) { toast('이 판은 기보가 저장되지 않았어요'); return; }
+  rpStop();
+  RP = { A, k:0, playing:false, speed: settings.rpSpeed || 1, timer:null, from: screen };
+  $('rpTitle').textContent = A.title; $('rpSub').textContent = A.sub || '';
+  show('replay'); rpRender();
+}
+function rpRender(){
+  if (!RP) return;
+  const fwd = RP.prevK!=null && RP.k===RP.prevK+1; RP.prevK = RP.k;
+  RP.A.render(RP.k, fwd);
+  $('rpCount').textContent = RP.k+' / '+RP.A.total;
+  $('rpSlider').max = RP.A.total; $('rpSlider').value = RP.k;
+  $('rpDesc').textContent = RP.A.desc(RP.k);
+  $('rpPlay').innerHTML = RP.playing ? '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>' : '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M7 5l12 7-12 7z"/></svg>';
+  document.querySelectorAll('#rpSpeed button').forEach(b=>b.setAttribute('aria-pressed', String(+b.dataset.v===RP.speed)));
+  $('rpPrev').disabled = $('rpFirst').disabled = RP.k<=0; $('rpNext').disabled = $('rpLast').disabled = RP.k>=RP.A.total;
+}
+function rpGo(k){ if (!RP) return; RP.k = Math.max(0, Math.min(RP.A.total, k)); rpRender(); }
+function rpStop(){ if (RP){ RP.playing=false; clearTimeout(RP.timer); } }
+function rpTick(){ if (!RP || !RP.playing) return; if (screen!=='replay'){ rpStop(); return; } if (RP.k>=RP.A.total){ RP.playing=false; rpRender(); return; } rpGo(RP.k+1); RP.timer = setTimeout(rpTick, 1400/RP.speed); }
+function rpToggle(){ if (!RP) return; if (RP.playing){ rpStop(); rpRender(); return; } if (RP.k>=RP.A.total) RP.k=0; RP.playing=true; rpRender(); RP.timer = setTimeout(rpTick, 500/RP.speed); }
+function rpManual(d){ rpStop(); rpGo(RP.k+d); }
+$('rpFirst').onclick = ()=>{ rpStop(); rpGo(0); };
+$('rpPrev').onclick = ()=>rpManual(-1);
+$('rpNext').onclick = ()=>rpManual(1);
+$('rpLast').onclick = ()=>{ rpStop(); rpGo(RP.A.total); };
+$('rpPlay').onclick = rpToggle;
+$('rpSlider').oninput = e=>{ rpStop(); rpGo(+e.target.value); };
+document.querySelectorAll('#rpSpeed button').forEach(b=>b.onclick=()=>{ RP.speed=+b.dataset.v; settings.rpSpeed=RP.speed; store.set('settings',settings); rpRender(); });
+$('rpBoard').addEventListener('click', ()=>{ if (RP) rpManual(1); });
+$('rpBack').onclick = ()=>{ rpStop(); show(RP && RP.from==='result' ? 'result' : 'records'); };
+document.addEventListener('keydown', e=>{
+  if (screen!=='replay' || !RP) return;
+  if (e.key==='Enter' || e.key==='ArrowRight' || e.key===' '){ e.preventDefault(); rpManual(1); }
+  else if (e.key==='ArrowLeft' || e.key==='Backspace'){ e.preventDefault(); rpManual(-1); }
+  else if (e.key==='Home'){ rpStop(); rpGo(0); } else if (e.key==='End'){ rpStop(); rpGo(RP.A.total); }
+  else if (e.key==='p' || e.key==='P'){ rpToggle(); }
+});
+function rpKeep(e){ e.mv = G.moves.slice(); rec.games.forEach((g,i)=>{ if (i>=100 && g.mv) delete g.mv; }); }
+
+function replayAdapter(g){
+  if (!g.mv || !g.mv.length) return null;
+  const n = g.n||15, who = g.mode==='pvp' ? '둘이서' : g.mode==='online' ? '온라인'+(g.opp?' · '+g.opp+' 님':'') : 'AI '+LVN[g.level];
+  const endTxt = g.how==='resign' ? '기권으로 끝' : g.how==='time' ? '시간 초과로 끝' : g.how==='full' ? '무승부' : g.how==='quit' ? '중단' : (g.winner===BLACK?'흑':'백')+' 다섯 완성';
+  return { total: g.mv.length, title: '복기 · '+who, sub: when(g.t)+' · '+n+'줄'+(g.mode!=='pvp'?' · 나는 '+(g.human===BLACK?'흑':'백'):''),
+    render(k, fwd){ const b = new Game(n); for (let i=0;i<k;i++) b.play(g.mv[i]);
+      drawBoard($('rpBoard'), b, { coords:true, last: k ? b.last : null, anim: (fwd && k) ? { drop:g.mv[k-1], until:Date.now()+600 } : null, win: b.winLine }); if (fwd && k) clack(); },
+    desc(k){ if (!k) return '처음 · 판을 누르면 첫 수부터 봐요'; const p = g.mv[k-1]; return k+'수 · '+(k%2?'흑':'백')+' '+LET[p%n]+(n-((p/n)|0))+(k===g.mv.length ? ' · '+endTxt : ''); } };
+}
+
+$('rReplay').onclick = ()=>{ if (rec.games[0] && rec.games[0].mv) openReplay(rec.games[0]); };
 show('home');
 window.__LB = ()=>LB.b;
 window.__om = { get G(){ return G; }, get B(){ return B; }, get thinking(){ return thinking; }, get ending(){ return ending; }, newGame, openLesson, show, get rec(){ return rec; }, endGame, playAt(p){ if (playMove(p)){ if (!afterMove() && G.mode==='ai') aiTurn(); return true; } return false; } };
