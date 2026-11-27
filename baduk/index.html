@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수담 바둑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3EAD7;--paper2:#EADFC6;--ink:#2A1E14;--sub:#6B5A48;--line:#D6C6A6;--card:#FBF6EA;
+  --wood1:#E2B970;--wood2:#D4A256;--wood3:#C48E44;--grid:#3B2A17;--seal:#A8322D;--seal-soft:#F3DCD6;--ok:#2F6B3A;
+  --serif:'Noto Serif KR','Nanum Myeongjo',serif;--shadow:0 10px 26px rgba(60,38,16,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;color:var(--ink);font-family:'Noto Sans KR',system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:var(--paper) radial-gradient(circle at 20% 10%,rgba(255,255,255,.5),transparent 60%);}
+button{font-family:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;min-height:100dvh}
+.screen{display:none;min-height:100dvh;padding:18px 16px 20px;flex-direction:column;gap:14px}
+.screen.on{display:flex}
+.row{display:flex;align-items:center}.between{justify-content:space-between}
+.title{font-family:var(--serif);font-weight:900;letter-spacing:-.5px}
+.muted{color:var(--sub)}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 0 rgba(120,90,50,.08)}
+.btn{height:54px;border-radius:14px;font-size:16px;font-weight:700;width:100%}
+.btn.ink{background:var(--ink);color:#F7EFDD}
+.btn.seal{background:var(--seal);color:#fff}
+.btn.plain{background:var(--card);border:1px solid var(--line);font-weight:500}
+.btn:active,.tool:active{transform:scale(.97)}
+.seal-mark{width:48px;height:48px;border-radius:10px;background:var(--seal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:22px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.card.menu{flex-direction:row;align-items:center;gap:14px;text-align:left;width:100%}
+.menu .ic{width:52px;height:52px;border-radius:14px;background:var(--paper2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.menu b{font-size:16px;font-family:var(--serif)}.menu small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+.grade{display:flex;align-items:center;gap:12px}
+.grade .g{font-family:var(--serif);font-weight:900;font-size:26px}
+.bar{height:6px;border-radius:3px;background:var(--paper2);overflow:hidden}.bar>i{display:block;height:100%;background:var(--seal)}
+.chips{display:flex;gap:6px}
+.chips button{flex:1 1 0;min-height:44px;border-radius:12px;background:var(--paper);border:1px solid var(--line);font-size:14px;color:var(--sub);padding:6px 4px;line-height:1.25}
+.chips button small{display:block;font-size:11px}
+.chips button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#F7EFDD;font-weight:700}
+.lbl{font-size:13px;color:var(--sub);font-weight:500}
+/* 바둑판 */
+.goban{position:relative;width:100%;aspect-ratio:1;border-radius:6px;
+  background:
+    repeating-linear-gradient(92deg,rgba(120,70,20,.07) 0 2px,transparent 2px 9px),
+    repeating-linear-gradient(88deg,rgba(90,50,10,.05) 0 1px,transparent 1px 23px),
+    linear-gradient(160deg,var(--wood1),var(--wood2) 55%,var(--wood3));
+  box-shadow:0 1px 0 #F5D9A3 inset,0 -3px 0 rgba(80,45,10,.25) inset,0 12px 24px rgba(60,35,10,.35);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.goban svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.goban .drop{animation:stoneDrop .38s cubic-bezier(.2,.9,.3,1.25) both;transform-box:fill-box;transform-origin:center}
+@keyframes stoneDrop{0%{transform:translateY(-.4px) scale(1.3);opacity:0}100%{transform:none;opacity:1}}
+.goban .gone{animation:stoneGone .55s ease-in .12s forwards;transform-box:fill-box;transform-origin:center}
+@keyframes stoneGone{to{opacity:0;transform:scale(.55)}}
+.goban .tg{animation:tg 1s ease-in-out infinite}
+@keyframes tg{50%{opacity:.18}}
+.gamebar{display:flex;gap:8px;align-items:stretch}
+.player{flex:1 1 0;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--line);min-width:0}
+.player.turn{border-color:var(--seal);box-shadow:0 0 0 1px var(--seal)}
+.player .st{width:22px;height:22px;border-radius:50%;flex-shrink:0}
+.st.b{background:radial-gradient(circle at 35% 30%,#6a6a6a,#111 60%)}
+.st.w{background:radial-gradient(circle at 35% 30%,#fff,#d9d4c7 70%);box-shadow:inset 0 0 0 1px #bfb8a8}
+.player b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player span{font-size:12px;color:var(--sub);white-space:nowrap}
+.status{min-height:22px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.think{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+.think .bar{width:90px}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tool{height:56px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px}
+.tool svg{width:20px;height:20px}
+/* 교육 */
+.lesson-list{display:flex;flex-direction:column;gap:8px}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:left;width:100%}
+.lrow .no{width:30px;height:30px;border-radius:50%;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;flex-shrink:0}
+.lrow.done .no{background:var(--ok);color:#fff}
+.ltext{white-space:pre-line;font-size:15px;line-height:1.65}
+.feedback{padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.55}
+.feedback.good{background:#E3EEDF;color:#23502C}.feedback.bad{background:var(--seal-soft);color:#7D211C}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 결과·기록 */
+.result-big{font-family:var(--serif);font-weight:900;font-size:34px;text-align:center}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.score .card{align-items:center;text-align:center;gap:4px}
+.score b{font-family:var(--serif);font-size:28px}
+.hist{display:flex;flex-direction:column;border-radius:16px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+.hist div{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);font-size:13px}
+.hist div:first-child{border-top:0}
+.tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0}
+.tag.win{background:#E3EEDF;color:#23502C}.tag.lose{background:var(--seal-soft);color:#7D211C}.tag.draw{background:var(--paper2);color:var(--sub)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:12px 6px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center}
+.stat span{display:block;font-size:12px;color:var(--sub)}.stat b{font-family:var(--serif);font-size:20px}
+/* 시트·알림 */
+.dim{position:fixed;inset:0;background:rgba(30,20,10,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.dim.on{display:flex}.dim.center{align-items:center;padding:20px}
+.sheet{width:100%;max-width:520px;background:var(--paper);border-radius:22px 22px 0 0;padding:20px 16px 28px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow);max-height:92dvh;overflow:auto}
+.modal{width:100%;max-width:360px;background:var(--paper);border-radius:20px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:10px;text-align:center;box-shadow:var(--shadow)}
+.opt{min-height:56px;padding:0 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%}
+.sw{width:46px;height:26px;border-radius:13px;background:var(--line);position:relative;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.opt[aria-checked=true] .sw{background:var(--ink)}.opt[aria-checked=true] .sw::after{transform:translateX(20px)}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-20px);background:var(--ink);color:#F7EFDD;padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.rules p,.rules li{font-size:14px;line-height:1.65}.rules h3{font-family:var(--serif);margin:8px 0 2px;font-size:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* PC: 판을 화면 높이에 맞춰 크게, 버튼은 오른쪽 */
+@media (min-width:900px) and (min-height:560px){
+  .app{max-width:none}
+  .screen:not(#game):not(#lesson){max-width:520px;margin:0 auto}
+  #game.on,#lesson.on{display:grid;grid-template-columns:auto 380px;grid-auto-rows:min-content;column-gap:32px;row-gap:12px;justify-content:center;align-content:center;min-height:100dvh;padding:24px}
+  #game > *,#lesson > *{grid-column:2}
+  #game > .goban,#lesson > .goban{grid-column:1;grid-row:1 / span 8;align-self:center}
+  #game > .goban{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  #lesson > .goban{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  .tool{height:62px;font-size:13px}
+}
+
+@media (min-width:1500px) and (min-height:800px){
+  #game.on,#lesson.on{grid-template-columns:auto 456px}
+  #game > :not(.goban),#lesson > :not(.goban){zoom:1.2}
+  #game > .goban,#lesson > .goban{width:min(calc((100dvh - 48px)), calc(100vw - 560px))}
+}
+</style>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icons/favicon.png"><link rel="apple-touch-icon" href="../icons/apple-180.png"><meta name="theme-color" content="#A8322D">
+</head>
+<body>
+<div class="app">
+
+<!-- 홈 -->
+<section class="screen on" id="home">
+  <div class="row between">
+    <div class="row" style="gap:12px"><div class="seal-mark" aria-hidden="true">手</div>
+      <div><div class="title" style="font-size:28px">수담 바둑</div><div class="muted" style="font-size:13px">손으로 나누는 대화, 한 판 두실까요</div></div></div>
+    <button class="icon-btn" id="openSettings" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+  </div>
+  <div class="card">
+    <div class="grade"><div><div class="lbl">내 기력</div><div class="g" id="myGrade">30급</div></div>
+      <div style="flex-grow:1"><div class="bar"><i id="gradeBar" style="width:0%"></i></div><div class="muted" style="font-size:12px;margin-top:6px" id="gradeTip">AI를 이기면 기력이 올라가요</div></div></div>
+  </div>
+  <button class="card" id="resume" hidden style="text-align:left;background:var(--ink);color:#F7EFDD;border-color:var(--ink)">
+    <div class="row between" style="width:100%"><span style="font-size:13px;opacity:.75">이어서 두기</span><span style="font-weight:700">계속 ▶</span></div>
+    <span id="rsInfo" style="font-family:var(--serif);font-size:17px;font-weight:700"></span>
+  </button>
+  <button class="card menu" id="goPlay"><div class="ic"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="10" cy="12" r="7" fill="#1b1b1b"/><circle cx="18" cy="17" r="7" fill="#f8f5ee" stroke="#b9b1a0"/></svg></div><div><b>AI와 대국</b><small>초급 · 중급 · 고급, 9줄 · 13줄 · 19줄</small></div></button>
+  <button class="card menu" id="goLearn"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h7a3 3 0 013 3v12a2 2 0 00-2-2H3z"/><path d="M21 5h-7a3 3 0 00-3 3v12a2 2 0 012-2h8z"/></svg></div><div><b>바둑 배우기</b><small id="learnInfo">완전 처음이라면 여기부터 · 15강</small></div></button>
+  <button class="card menu" id="goPvp"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div><div><b>둘이서 두기</b><small>한 기기로 번갈아 두기</small></div></button>
+  <button class="card menu" id="goOnline" hidden><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A8322D" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9M12 3c-2.5 2.7-3.8 5.7-3.8 9s1.3 6.3 3.8 9"/></svg></div><div><b>온라인 대전</b><small>방 만들기 · 번호로 들어가기 · 열린 방</small></div></button>
+  <div class="row" style="gap:8px"><button class="btn plain" id="goRecords">기록</button><button class="btn plain" id="goRules">규칙·기력 안내</button></div>
+</section>
+
+<!-- 대국 -->
+<section class="screen" id="game" style="gap:10px">
+  <div class="row between">
+    <button class="icon-btn" id="gHome" aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button>
+    <div class="title" id="gTitle" style="font-size:18px">AI 대국</div>
+    <div class="muted" id="gMove" style="font-size:13px;width:44px;text-align:right">0수</div>
+  </div>
+  <div class="nt-bar" id="netBar" hidden></div>
+  <div class="gamebar">
+    <div class="player" id="pB"><span class="st b"></span><div style="min-width:0"><b id="pBName">나</b><br><span id="pBCap">따낸 돌 0</span></div></div>
+    <div class="player" id="pW"><span class="st w"></span><div style="min-width:0"><b id="pWName">AI</b><br><span id="pWCap">따낸 돌 0 · 덤 6.5</span></div></div>
+  </div>
+  <div class="goban" id="goban"></div>
+  <div class="status"><span id="gStatus">흑 차례</span><span class="think" id="think" hidden><span>생각 중</span><span class="bar"><i id="thinkBar" style="width:0%"></i></span></span></div>
+  <div class="tools" id="playTools">
+    <button class="tool" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>무르기</button>
+    <button class="tool" id="hintBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>힌트</button>
+    <button class="tool" id="passBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>한 수 쉼</button>
+    <button class="tool" id="resignBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>기권</button>
+  </div>
+  <div class="tools" id="scoreTools" hidden style="grid-template-columns:1fr 1fr">
+    <button class="btn plain" id="scoreBack">계속 두기</button><button class="btn ink" id="scoreOk">계가 확정</button>
+  </div>
+</section>
+
+<!-- 결과 -->
+<section class="screen" id="result">
+  <div class="row"><button class="icon-btn" data-home aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></div>
+  <div class="result-big" id="rTitle" style="margin-top:10px">흑 승</div>
+  <div class="muted" id="rSub" style="text-align:center;font-size:14px"></div>
+  <div class="score" id="rScore"></div>
+  <div class="card" id="rGrade" hidden style="align-items:center;text-align:center"></div>
+  <div class="goban" id="rBoard" style="width:72%;align-self:center"></div>
+  <div style="flex-grow:1"></div>
+  <button class="btn ink" id="rAgain">한 판 더</button>
+  <button class="btn plain" data-home>홈으로</button>
+</section>
+
+<!-- 배우기 목록 -->
+<section class="screen" id="learn">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">바둑 배우기</span></div>
+  <p class="muted" style="margin:0;font-size:14px">완전 처음이어도 괜찮아요. 한 강씩 직접 돌을 놓으며 배워요.</p>
+  <div class="lesson-list" id="lessonList"></div>
+</section>
+
+<!-- 배우기 한 강 -->
+<section class="screen" id="lesson" style="gap:12px">
+  <div class="row between"><button class="icon-btn" id="lBack" aria-label="목록으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="title" id="lTitle" style="font-size:19px"></span><span class="muted" id="lNo" style="font-size:13px;width:44px;text-align:right"></span></div>
+  <div class="ltext" id="lText"></div>
+  <div class="goban" id="lBoard"></div>
+  <div class="choice" id="lChoice" hidden></div>
+  <div class="feedback" id="lFeed" hidden></div>
+  <div class="row" style="gap:8px"><button class="btn plain" id="lRetry">다시 하기</button><button class="btn ink" id="lNext">다음 강</button></div>
+</section>
+
+<!-- 기록 -->
+<section class="screen" id="records">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">기록</span></div>
+  <div id="recBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<!-- 규칙·기력 -->
+<section class="screen" id="rules">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">규칙·기력 안내</span></div>
+  <div class="card rules">
+    <h3>AI 단계와 기력</h3>
+    <ul><li><b>초급</b> — 30~19급 수준. 규칙을 막 익힌 분께.</li><li><b>중급</b> — 18~11급 수준. 따내기·축 정도는 아는 분께.</li><li><b>고급</b> — 10급 이상을 목표로 한 상대. 9줄 판에서 가장 강해요.</li></ul>
+    <p class="muted" style="font-size:13px">급수는 대략적인 기준이에요. AI는 9줄 판에서 가장 세고, 판이 커질수록 같은 단계라도 조금 약해져요.</p>
+    <h3>내 기력이 오르는 방법</h3>
+    <ul><li>처음엔 30급에서 시작해요.</li><li>이기면 기력이 올라요 (9줄 1급, 13줄 2급, 19줄 3급씩).</li><li>단계마다 오를 수 있는 한계가 있어요: 초급 상대 19급까지, 중급 상대 11급까지, 고급 상대 1단까지.</li><li>내 기력보다 약한 단계에 지면 1급 내려가요.</li><li>무르기·힌트를 쓴 판은 이겨도 기력이 오르지 않아요.</li></ul>
+    <h3>계가 (한국식)</h3>
+    <p>둘 다 한 수씩 쉬면 대국이 끝나요. 죽은 돌은 자동으로 표시되고, 틀렸으면 돌을 눌러 고칠 수 있어요. 내 집 + 따낸 돌(죽은 돌 포함)이 점수예요. 백은 덤 6.5집을 더 받아요.</p>
+  </div>
+</section>
+</div>
+
+<!-- 대국 설정 -->
+<div class="dim" id="setup" role="dialog" aria-modal="true" aria-label="대국 설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">대국 설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <span class="lbl">AI 단계</span>
+    <div class="chips" id="sLevel"><button data-v="0">초급<small>30~19급</small></button><button data-v="1">중급<small>18~11급</small></button><button data-v="2">고급<small>10급~</small></button></div>
+    <span class="lbl">바둑판</span>
+    <div class="chips" id="sSize"><button data-v="9">9줄<small>5~10분</small></button><button data-v="13">13줄<small>15분</small></button><button data-v="19">19줄<small>정식</small></button></div>
+    <span class="lbl">내 돌</span>
+    <div class="chips" id="sColor"><button data-v="1">흑 (먼저)</button><button data-v="2">백 (덤 6.5)</button><button data-v="0">무작위</button></div>
+    <div class="muted" id="sTip" style="font-size:13px"></div>
+    <button class="btn ink" id="startGame">대국 시작</button>
+  </div>
+</div>
+<!-- 둘이서 설정 -->
+<div class="dim" id="pvpSetup" role="dialog" aria-modal="true" aria-label="둘이서 두기">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">둘이서 두기</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <span class="lbl">바둑판</span>
+    <div class="chips" id="pSize"><button data-v="9">9줄</button><button data-v="13">13줄</button><button data-v="19">19줄</button></div>
+    <button class="btn ink" id="startPvp">시작</button>
+  </div>
+</div>
+<!-- 설정 -->
+<div class="dim" id="settings" role="dialog" aria-modal="true" aria-label="설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <button class="opt" role="switch" data-set="sound"><span>돌 놓는 소리</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="coords"><span>좌표 표시</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="confirm"><span>두 번 눌러 착수<small style="display:block;font-size:12px;color:var(--sub)">잘못 누르는 실수 방지 (폰 추천)</small></span><span class="sw"></span></button>
+  </div>
+</div>
+<!-- 확인 -->
+<div class="dim center" id="askModal" role="dialog" aria-modal="true">
+  <div class="modal"><span class="title" style="font-size:19px" id="askTitle"></span><span class="muted" id="askText" style="font-size:14px;margin-bottom:6px"></span>
+    <button class="btn ink" id="askYes">확인</button><button class="btn plain" data-close>취소</button></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../net.js"></script>
+<script>
+// 바둑 엔진: 규칙(따내기·착수금지·패), 계가, MCTS AI — 화면과 분리
+(function (root) {
+'use strict';
+const EMPTY = 0, BLACK = 1, WHITE = 2, EDGE = 3, PASS = -1;
+
+class Board {
+  constructor(n) {
+    this.n = n; this.w = n + 2; this.size = this.w * this.w;
+    this.c = new Uint8Array(this.size);
+    this.smark = new Int32Array(this.size); this.lmark = new Int32Array(this.size); this.stamp = 1;
+    this.emp = new Int32Array(this.size); this.empIdx = new Int32Array(this.size).fill(-1); this.ne = 0;
+    for (let p = 0; p < this.size; p++) {
+      const x = p % this.w, y = (p / this.w) | 0;
+      if (x === 0 || y === 0 || x === this.w - 1 || y === this.w - 1) this.c[p] = EDGE;
+      else { this.empIdx[p] = this.ne; this.emp[this.ne++] = p; }
+    }
+    this.d = [-1, 1, -this.w, this.w];
+    this.dg = [-this.w - 1, -this.w + 1, this.w - 1, this.w + 1];
+    this.ko = -1; this.toMove = BLACK; this.caps = [0, 0, 0]; this.passes = 0; this.last = -2; this.moves = 0;
+    this.lastLib = -1; this.gsize = 0;
+  }
+  clone() {
+    const b = Object.create(Board.prototype);
+    b.n = this.n; b.w = this.w; b.size = this.size; b.c = this.c.slice();
+    b.smark = new Int32Array(this.size); b.lmark = new Int32Array(this.size); b.stamp = 1;
+    b.emp = this.emp.slice(); b.empIdx = this.empIdx.slice(); b.ne = this.ne;
+    b.d = this.d; b.dg = this.dg; b.ko = this.ko; b.toMove = this.toMove; b.caps = this.caps.slice();
+    b.passes = this.passes; b.last = this.last; b.moves = this.moves; b.lastLib = -1; b.gsize = 0;
+    return b;
+  }
+  pt(x, y) { return (y + 1) * this.w + (x + 1); }
+  xy(p) { return [p % this.w - 1, ((p / this.w) | 0) - 1]; }
+  _rmEmp(p) { const i = this.empIdx[p], last = this.emp[--this.ne]; this.emp[i] = last; this.empIdx[last] = i; this.empIdx[p] = -1; }
+  _addEmp(p) { this.empIdx[p] = this.ne; this.emp[this.ne++] = p; }
+  // 그 돌이 속한 무리의 활로 수 (limit 개까지만 세면 멈춤)
+  libs(p, limit) {
+    const col = this.c[p], st = ++this.stamp, c = this.c, d = this.d, sm = this.smark, lm = this.lmark;
+    const stack = [p]; sm[p] = st; let L = 0, n = 0; limit = limit || 999;
+    while (stack.length) {
+      const q = stack.pop(); n++;
+      for (let k = 0; k < 4; k++) {
+        const r = q + d[k], v = c[r];
+        if (v === EMPTY) { if (lm[r] !== st) { lm[r] = st; L++; this.lastLib = r; if (L >= limit) { this.gsize = n; return L; } } }
+        else if (v === col && sm[r] !== st) { sm[r] = st; stack.push(r); }
+      }
+    }
+    this.gsize = n; return L;
+  }
+  stones(p) {
+    const col = this.c[p], st = ++this.stamp, out = [p], c = this.c, d = this.d, sm = this.smark; sm[p] = st;
+    for (let i = 0; i < out.length; i++) { const q = out[i]; for (let k = 0; k < 4; k++) { const r = q + d[k]; if (c[r] === col && sm[r] !== st) { sm[r] = st; out.push(r); } } }
+    return out;
+  }
+  _remove(p) { const g = this.stones(p); for (const q of g) { this.c[q] = EMPTY; this._addEmp(q); } return g.length; }
+  isLegal(p, col) {
+    if (p === PASS) return true;
+    if (this.c[p] !== EMPTY || p === this.ko) return false;
+    const opp = 3 - col, c = this.c, d = this.d;
+    for (let k = 0; k < 4; k++) if (c[p + d[k]] === EMPTY) return true;
+    for (let k = 0; k < 4; k++) {
+      const r = p + d[k], v = c[r];
+      if (v === col && this.libs(r, 2) >= 2) return true;
+      if (v === opp && this.libs(r, 2) === 1) return true;
+    }
+    return false;
+  }
+  // 둘 수 있으면 두고 true. 따낸 돌 수는 this.lastCap
+  play(p, col) {
+    col = col || this.toMove;
+    if (p === PASS) { this.passes++; this.ko = -1; this.toMove = 3 - col; this.last = PASS; this.moves++; this.lastCap = 0; return true; }
+    if (!this.isLegal(p, col)) return false;
+    const opp = 3 - col, c = this.c, d = this.d;
+    c[p] = col; this._rmEmp(p);
+    let cap = 0, capPt = -1;
+    for (let k = 0; k < 4; k++) {
+      const r = p + d[k];
+      if (c[r] === opp && this.libs(r, 1) === 0) { const n = this._remove(r); cap += n; capPt = r; }
+    }
+    this.caps[col] += cap; this.lastCap = cap;
+    this.ko = -1;
+    if (cap === 1) { const L = this.libs(p, 2); if (L === 1 && this.gsize === 1) this.ko = capPt; }
+    this.passes = 0; this.last = p; this.toMove = opp; this.moves++;
+    return true;
+  }
+  // 자기 눈(진짜 눈에 가까운 자리) — 무작위 대국에서 메우지 않음
+  isEye(p, col) {
+    const c = this.c, d = this.d;
+    for (let k = 0; k < 4; k++) { const v = c[p + d[k]]; if (v !== col && v !== EDGE) return false; }
+    let bad = 0, edge = 0;
+    for (let k = 0; k < 4; k++) { const v = c[p + this.dg[k]]; if (v === EDGE) edge = 1; else if (v === 3 - col) bad++; }
+    return edge ? bad < 1 : bad < 2;
+  }
+  // 무작위 대국 끝난 판의 집 계산 (돌 + 한 색으로만 둘러싸인 빈 점)
+  areaScore(komi) {
+    let s = 0; const c = this.c, d = this.d;
+    for (let y = 0; y < this.n; y++) for (let x = 0; x < this.n; x++) {
+      const p = this.pt(x, y), v = c[p];
+      if (v === BLACK) s++; else if (v === WHITE) s--;
+      else { let b = 0, w = 0; for (let k = 0; k < 4; k++) { const u = c[p + d[k]]; if (u === BLACK) b = 1; else if (u === WHITE) w = 1; } if (b && !w) s++; else if (w && !b) s--; }
+    }
+    return s - komi;
+  }
+}
+
+// ---------- 무작위 대국 (몬테카를로) ----------
+let rnd = Math.random;
+function setRandom(f) { rnd = f; }
+function selfAtariBig(b, p, col) {
+  const c = b.c, d = b.d, opp = 3 - col;
+  c[p] = col;
+  for (let k = 0; k < 4; k++) { const r = p + d[k]; if (c[r] === opp && b.libs(r, 1) === 0) { c[p] = EMPTY; return false; } }
+  const L = b.libs(p, 2), n = b.gsize; c[p] = EMPTY;
+  return L <= 1 && n >= 3;
+}
+function libsAfter(b, p, col) { const c = b.c; c[p] = col; const L = b.libs(p, 3); c[p] = EMPTY; return L; }
+// 직전 수 주변에서 급한 수 (따내기, 단수에서 도망)
+function urgent(b, col) {
+  const last = b.last; if (last < 0) return -1;
+  const c = b.c, d = b.d, opp = 3 - col;
+  if (c[last] === opp && b.libs(last, 2) === 1) { const L = b.lastLib; if (b.isLegal(L, col)) return L; }
+  for (let k = 0; k < 4; k++) {
+    const r = last + d[k];
+    if (c[r] === col && b.libs(r, 2) === 1) {
+      const L = b.lastLib;
+      // 둘러싼 상대 돌 중 단수를 따내서 살기
+      const g = b.stones(r);
+      for (const q of g) for (let j = 0; j < 4; j++) { const e = q + d[j]; if (c[e] === opp && b.libs(e, 2) === 1) { const cl = b.lastLib; if (b.isLegal(cl, col)) return cl; } }
+      if (b.isLegal(L, col) && libsAfter(b, L, col) >= 2) return L;
+    } else if (c[r] === opp && b.libs(r, 2) === 1) { const L = b.lastLib; if (b.isLegal(L, col)) return L; }
+  }
+  return -1;
+}
+function playoutMove(b, col) {
+  if (rnd() < 0.9) { const u = urgent(b, col); if (u >= 0) return u; }
+  const ne = b.ne; if (!ne) return PASS;
+  const start = (rnd() * ne) | 0;
+  for (let i = 0; i < ne; i++) {
+    const p = b.emp[(start + i) % ne];
+    if (b.isEye(p, col)) continue;
+    if (!b.isLegal(p, col)) continue;
+    if (selfAtariBig(b, p, col)) continue;
+    return p;
+  }
+  return PASS;
+}
+function playout(b, komi, amaf) {
+  const cap = b.n * b.n * 3;
+  let guard = 0;
+  while (b.passes < 2 && guard++ < cap) {
+    const col = b.toMove, m = playoutMove(b, col);
+    if (m !== PASS && amaf && amaf[m] === 0) amaf[m] = col;
+    b.play(m, col);
+  }
+  return b.areaScore(komi) > 0 ? BLACK : WHITE;
+}
+
+// ---------- 탐색 트리 (UCT + RAVE) ----------
+class Node {
+  constructor(move, color, parent, pv, pw) { this.move = move; this.color = color; this.parent = parent; this.children = null; this.N = 0; this.W = 0; this.aN = 0; this.aW = 0; this.pv = pv; this.pw = pw; }
+}
+function lineOf(b, p) { const [x, y] = b.xy(p); return Math.min(x, y, b.n - 1 - x, b.n - 1 - y); }
+function expand(node, b) {
+  const col = b.toMove, kids = [], n = b.n, early = b.moves < n * n * 0.35;
+  const near = new Set();
+  if (b.last >= 0) { const [lx, ly] = b.xy(b.last); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 2) { const x = lx + dx, y = ly + dy; if (x >= 0 && y >= 0 && x < n && y < n) near.add(b.pt(x, y)); } }
+  const urg = urgent(b, col);
+  for (let i = 0; i < b.ne; i++) {
+    const p = b.emp[i];
+    if (b.isEye(p, col) || !b.isLegal(p, col)) continue;
+    let pv = 20, pw = 10;
+    const line = lineOf(b, p);
+    if (early) { if (line === 0) pw = 2; else if (line === 1) pw = 6; else if (n >= 13 && (line === 2 || line === 3)) pw = 13; }
+    if (near.has(p)) pw += 1.5;
+    if (p === urg) pw += 6;
+    if (selfAtariBig(b, p, col)) pw = 1;
+    kids.push(new Node(p, col, node, pv, pw));
+  }
+  // 한 수 쉼 (패스): 판이 많이 찼을 때만 의미 있게
+  const full = b.moves > n * n * 0.55;
+  kids.push(new Node(PASS, col, node, 20, full || kids.length < 3 ? 8 : 0.5));
+  node.children = kids;
+}
+function select(node) {
+  const lnN = Math.log(node.N + 1);
+  let best = null, bv = -1;
+  for (const c of node.children) {
+    const n = c.N + c.pv, q = (c.W + c.pw) / n;
+    const beta = c.aN / (c.aN + n + 0.000625 * c.aN * n + 1e-9);
+    const aq = c.aN ? c.aW / c.aN : q;
+    const v = (1 - beta) * q + beta * aq + 0.15 * Math.sqrt(lnN / (n + 1));
+    if (v > bv) { bv = v; best = c; }
+  }
+  return best;
+}
+// 탐색 (동기). opts: { playouts, timeMs, komi }. 반환: { move, win, visits, kids, own }
+function createSearch(board, opts) {
+  const root = new Node(board.last, 3 - board.toMove, null, 0, 0);
+  const komi = opts.komi, size = board.size;
+  const own = new Float32Array(size); let ownN = 0;
+  const amaf = new Uint8Array(size);
+  let done = 0;
+  function iterate(k) {
+    for (let it = 0; it < k; it++) {
+      const b = board.clone();
+      amaf.fill(0);
+      let node = root;
+      if (!node.children) expand(node, b);
+      while (node.children && node.children.length) {
+        node = select(node);
+        if (node.move !== PASS && amaf[node.move] === 0) amaf[node.move] = node.color;
+        b.play(node.move, node.color);
+        if (b.passes >= 2) break;
+        if (!node.children && node.N >= 1) { expand(node, b); }
+        else if (!node.children) break;
+      }
+      const winner = b.passes >= 2 ? (b.areaScore(komi) > 0 ? BLACK : WHITE) : playout(b, komi, amaf);
+      if (done < 4000) { for (let y = 0; y < board.n; y++) for (let x = 0; x < board.n; x++) { const p = board.pt(x, y), v = b.c[p];
+        let o = v === BLACK ? 1 : v === WHITE ? -1 : 0;
+        if (!o) { let bb = 0, ww = 0; for (const dd of b.d) { const u = b.c[p + dd]; if (u === BLACK) bb = 1; else if (u === WHITE) ww = 1; } o = bb && !ww ? 1 : ww && !bb ? -1 : 0; }
+        own[p] += o; } ownN++; }
+      for (let nd = node; nd; nd = nd.parent) {
+        nd.N++; if (winner === nd.color) nd.W++;
+        if (nd.children) for (const c of nd.children) {
+          if (c.move !== PASS && amaf[c.move] === c.color) { c.aN++; if (winner === c.color) c.aW++; }
+        }
+      }
+      done++;
+    }
+  }
+  function result() {
+    const kids = (root.children || []).slice().sort((a, b) => b.N - a.N);
+    const best = kids[0];
+    const ownOut = new Float32Array(size); if (ownN) for (let i = 0; i < size; i++) ownOut[i] = own[i] / ownN;
+    return { move: best ? best.move : PASS, win: best && best.N ? best.W / best.N : 0.5, visits: done, kids: kids.slice(0, 8).map(k => ({ move: k.move, N: k.N, win: k.N ? k.W / k.N : 0 })), own: ownOut, root };
+  }
+  return { iterate, result, get done() { return done; } };
+}
+function search(board, opts) {
+  const s = createSearch(board, opts), t0 = Date.now();
+  while (s.done < (opts.playouts || 1e9) && Date.now() - t0 < (opts.timeMs || 1e9)) s.iterate(50);
+  return s.result();
+}
+
+// ---------- 계가 ----------
+// 소유 추정 → 죽은 돌 판정
+function ownership(board, komi, n) {
+  const own = new Float32Array(board.size);
+  for (let i = 0; i < n; i++) {
+    const b = board.clone(); b.passes = 0; playout(b, komi, null);
+    for (let y = 0; y < board.n; y++) for (let x = 0; x < board.n; x++) {
+      const p = board.pt(x, y), v = b.c[p];
+      let o = v === BLACK ? 1 : v === WHITE ? -1 : 0;
+      if (!o) { let bb = 0, ww = 0; for (const dd of b.d) { const u = b.c[p + dd]; if (u === BLACK) bb = 1; else if (u === WHITE) ww = 1; } o = bb && !ww ? 1 : ww && !bb ? -1 : 0; }
+      own[p] += o / n;
+    }
+  }
+  return own;
+}
+function guessDead(board, own) {
+  const dead = new Uint8Array(board.size), seen = new Uint8Array(board.size);
+  for (let p = 0; p < board.size; p++) {
+    const v = board.c[p]; if ((v !== BLACK && v !== WHITE) || seen[p]) continue;
+    const g = board.stones(p); let s = 0; for (const q of g) { seen[q] = 1; s += own[q]; }
+    s /= g.length;
+    if ((v === BLACK && s < -0.35) || (v === WHITE && s > 0.35)) for (const q of g) dead[q] = 1;
+  }
+  return dead;
+}
+// 한국식 계가: 집 + 따낸 돌(사석 포함) + 덤
+function scoreTerritory(board, dead, komi) {
+  const n = board.n, c = board.c, d = board.d, terr = new Uint8Array(board.size), seen = new Uint8Array(board.size);
+  let tb = 0, tw = 0, deadB = 0, deadW = 0;
+  for (let p = 0; p < board.size; p++) if (dead[p]) { if (c[p] === BLACK) deadB++; else if (c[p] === WHITE) deadW++; }
+  const isOpen = p => c[p] === EMPTY || dead[p];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const p = board.pt(x, y); if (!isOpen(p) || seen[p]) continue;
+    const region = [p]; seen[p] = 1; let bb = 0, ww = 0;
+    for (let i = 0; i < region.length; i++) { const q = region[i];
+      for (let k = 0; k < 4; k++) { const r = q + d[k]; if (c[r] === EDGE) continue;
+        if (isOpen(r)) { if (!seen[r]) { seen[r] = 1; region.push(r); } }
+        else if (c[r] === BLACK) bb = 1; else if (c[r] === WHITE) ww = 1; } }
+    if (bb && !ww) { for (const q of region) terr[q] = BLACK; tb += region.length; }
+    else if (ww && !bb) { for (const q of region) terr[q] = WHITE; tw += region.length; }
+  }
+  // 죽은 돌 자리는 집이면서 사석: 집 수에서 그 자리도 1집, 사석도 1개 (한국식과 같음)
+  const black = tb + board.caps[BLACK] + deadW, white = tw + board.caps[WHITE] + deadB + komi;
+  return { black, white, tb, tw, capB: board.caps[BLACK] + deadW, capW: board.caps[WHITE] + deadB, terr, diff: black - white };
+}
+
+root.GO = { Board, EMPTY, BLACK, WHITE, EDGE, PASS, search, createSearch, playout, ownership, guessDead, scoreTerritory, setRandom, urgent };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ---------- AI 수 고르기 (단계별) ----------
+(function (root) {
+const GO = root.GO, { PASS, BLACK, WHITE } = GO;
+// 단계: 0 초급, 1 중급, 2 고급. scale: 테스트용 배율
+const BUDGET = {
+  0: n => ({ playouts: 700, timeMs: 1200 }),
+  1: n => ({ playouts: n <= 9 ? 3000 : n <= 13 ? 2500 : 2000, timeMs: 2500 }),
+  2: n => ({ playouts: 1e9, timeMs: n <= 9 ? 4000 : n <= 13 ? 5000 : 6000 })
+};
+function decide(board, r, level, komi, oppPassed) {
+  const col = board.toMove, n = board.n, sign = col === BLACK ? 1 : -1;
+  // 상대가 쉬었고 내가 이기고 있으면 쉼 → 대국 끝
+  if (oppPassed) {
+    const dead = GO.guessDead(board, r.own), sc = GO.scoreTerritory(board, dead, komi);
+    if (sc.diff * sign > 0) return { move: PASS, win: r.win };
+  }
+  let move = r.move;
+  if (level === 0 && r.kids.length) {
+    // 초급: 상위 후보 중 가끔 덜 좋은 수
+    const top = r.kids.filter(k => k.move !== PASS).slice(0, 5);
+    if (top.length && Math.random() < 0.3) move = top[(Math.random() * top.length) | 0].move;
+  }
+  // 늦은 판: 내 집 안에 두는 수면 차라리 쉼 (한국식 계가에서 손해)
+  if (move !== PASS && board.moves > n * n * 0.5) {
+    const o = r.own[move] * sign;
+    const pass = r.kids.find(k => k.move === PASS);
+    if (o > 0.85 && (!pass || pass.win >= r.win - 0.04)) {
+      // 주변이 모두 내 것이면 쉼
+      let safe = true; for (const d of board.d) { const q = move + d; if (board.c[q] !== 3 && r.own[q] * sign < 0.7) safe = false; }
+      if (safe) move = PASS;
+    }
+  }
+  if (level >= 1 && r.win < 0.04 && board.moves > n * n * 0.45) return { move: PASS, win: r.win, resign: true };
+  return { move, win: r.win };
+}
+function aiMove(board, level, komi, oppPassed, override) {
+  const budget = Object.assign(BUDGET[level](board.n), override || {});
+  const r = GO.search(board, Object.assign({ komi }, budget));
+  return Object.assign(decide(board, r, level, komi, oppPassed), { visits: r.visits, kids: r.kids, own: r.own });
+}
+GO.aiMove = aiMove; GO.decide = decide; GO.BUDGET = BUDGET;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ---------- 축 진행 (교육용 그림) ----------
+(function (root) {
+const GO = root.GO;
+// 공격자가 방금 단수를 친 상태에서 축을 끝까지 진행. 반환: { seq:[[p,col]...], captured }
+GO.runLadder = function (board, target, att) {
+  const b = board.clone(), def = 3 - att, seq = [];
+  for (let step = 0; step < 60; step++) {
+    if (b.c[target] !== def) return { seq, captured: true };
+    const L = b.libs(target, 3);
+    if (L >= 2) return { seq, captured: false };
+    const run = b.lastLib;
+    if (!b.isLegal(run, def)) return { seq, captured: true };
+    b.play(run, def); seq.push([run, def]);
+    const L2 = b.libs(target, 4);
+    if (L2 === 1) { const cp = b.lastLib; b.play(cp, att); seq.push([cp, att]); return { seq, captured: true }; }
+    if (L2 >= 3) return { seq, captured: false };
+    // 활로 2개: 다음에 백이 뻗어도 활로가 2개 이하가 되는 쪽으로 단수
+    const libs = []; { const g = b.stones(target); const seen = new Set(); for (const q of g) for (const d of b.d) { const r = q + d; if (b.c[r] === 0 && !seen.has(r)) { seen.add(r); libs.push(r); } } }
+    let pick = -1;
+    for (const m of libs) {
+      if (!b.isLegal(m, att)) continue;
+      const c = b.clone(); c.play(m, att);
+      if (c.libs(m, 2) < 2) continue;
+      if (c.libs(target, 2) !== 1) continue;
+      const run2 = c.lastLib; const d2 = c.clone(); if (!d2.isLegal(run2, def)) { pick = m; break; }
+      d2.play(run2, def); if (d2.libs(target, 3) <= 2) { pick = m; break; }
+    }
+    if (pick < 0) return { seq, captured: false };
+    b.play(pick, att); seq.push([pick, att]);
+  }
+  return { seq, captured: false };
+};
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+// 입문 교육: 그림판 + 할 일. X 흑, O 백, * 정답 자리
+(function (root) {
+const L = [
+  { title: '바둑판과 화점', toPlay: 1, type: 'place', size: 9,
+    text: '바둑은 흑과 백이 번갈아 가며 선이 만나는 점에 돌을 하나씩 놓아요. 흑이 먼저 둬요.\n판 위의 굵은 점을 "화점"이라고 해요. 화점 하나를 눌러보세요.',
+    rows: ['.........','.........','..*...*..','.........','....*....','.........','..*...*..','.........','.........'],
+    ok: '좋아요! 돌은 칸 안이 아니라 선과 선이 만나는 점에 놓아요.' },
+  { title: '활로 (숨 자리)', toPlay: 1, type: 'move',
+    text: '돌과 선으로 바로 이어진 빈 점을 "활로"라고 해요. 가운데 백 돌은 활로가 4개예요.\n흑으로 백의 활로 하나를 막아보세요.',
+    rows: ['.......','.......','...*...','..*O*..','...*...','.......','.......'],
+    ok: '맞아요. 이제 백의 활로는 3개예요. 활로가 0개가 되면 그 돌은 잡혀요.' },
+  { title: '단수와 따내기', toPlay: 1, type: 'move', expectCapture: 1,
+    text: '활로가 딱 1개 남은 상태를 "단수"라고 해요.\n백 돌의 마지막 활로를 막아서 따내보세요.',
+    rows: ['.......','.......','...X...','..XO*..','...X...','.......','.......'],
+    ok: '따냈어요! 따낸 돌은 판에서 들어내고, 끝나고 계가할 때 내 점수가 돼요.' },
+  { title: '여러 돌 따내기', toPlay: 1, type: 'move', expectCapture: 2,
+    text: '이어진 돌은 한 덩어리로 살고 함께 잡혀요. 백 두 점의 활로를 세어보고 마지막 활로를 막아보세요.',
+    rows: ['.......','...XX..','..XOOX.','...X*..','.......','.......','.......'],
+    ok: '두 점을 한꺼번에 따냈어요. 덩어리의 활로는 모든 돌의 활로를 합쳐서 세요.' },
+  { title: '단수에서 도망가기', toPlay: 1, type: 'move',
+    text: '이번엔 흑 돌이 단수예요(활로 1개). 그대로 두면 잡혀요.\n활로 쪽으로 이어 나가서 활로를 늘려보세요.',
+    rows: ['.......','.......','...O...','..OXO..','...*...','.......','.......'],
+    ok: '살았어요! 이어 나가니 활로가 3개로 늘었어요.' },
+  { title: '연결하기', toPlay: 1, type: 'move',
+    text: '흑 두 점이 대각선으로 떨어져 있고, 백이 끊으려고 해요.\n흑 두 점을 이어서 끊기지 않게 해보세요.',
+    rows: ['.......','.......','..XO...','..*X...','..O....','.......','.......'],
+    ok: '이었어요. 이어진 돌은 한 덩어리라 훨씬 튼튼해요.' },
+  { title: '끊기', toPlay: 1, type: 'move',
+    text: '이번엔 반대로 백 두 점이 대각선으로 놓여 있어요.\n백 두 점 사이를 끊어서 나눠보세요.',
+    rows: ['.......','.......','..OX...','..*O...','.......','.......','.......'],
+    ok: '끊었어요! 끊긴 돌은 따로따로 살아야 해서 약해져요.' },
+  { title: '착수금지', toPlay: 1, type: 'illegal',
+    text: '활로가 하나도 없는 곳에는 들어갈 수 없어요. 이런 자리를 "착수금지"라고 해요.\n흑이 둘 수 없는 자리를 찾아 눌러보세요.',
+    rows: ['.......','.......','...O...','..O*O..','...O...','.......','.......'],
+    ok: '맞아요. 사방이 백이라 흑이 들어가면 활로가 0개라서 못 둬요.' },
+  { title: '따낼 수 있으면 둘 수 있어요', toPlay: 1, type: 'move', expectCapture: 4,
+    text: '사방이 막힌 곳이라도, 그 수로 상대 돌을 따낼 수 있으면 둘 수 있어요.\n가운데에 둬서 백 네 점을 따내보세요.',
+    rows: ['.......','...X...','..XOX..','.XO*OX.','..XOX..','...X...','.......'],
+    ok: '한 번에 네 점! 따내면 활로가 생기니까 둘 수 있는 거예요.' },
+  { title: '패', toPlay: 1, type: 'move', expectCapture: 1, showKo: true,
+    text: '서로 한 점씩 계속 따낼 수 있는 모양을 "패"라고 해요.\n먼저 흑으로 백 한 점을 따내보세요.',
+    rows: ['.......','..XO...','.XO*O..','..XO...','.......','.......','.......'],
+    ok: '따냈어요. 이제 백은 ✕ 자리에 "바로" 되따낼 수 없어요. 다른 곳에 한 번 둔 다음에야 따낼 수 있어요. 이게 패 규칙이에요.' },
+  { title: '두 눈이면 산다', toPlay: 2, type: 'move',
+    text: '집 안에 따로 떨어진 빈 점(눈)이 두 개 있으면 그 돌은 절대 잡히지 않아요.\n백 차례예요. 백 무리가 두 눈을 만들어 살 수 있는 자리를 찾아보세요.',
+    rows: ['.......','.XXXXX.','XOOOOOX','XO.*.OX','XOOOOOX','.XXXXX.','.......'],
+    ok: '살았어요! 가운데를 두니 눈이 두 개로 나뉘었어요. 흑은 어느 눈에도 들어갈 수 없어요.' },
+  { title: '급소를 차지해 잡기', toPlay: 1, type: 'move',
+    text: '같은 모양에서 이번엔 흑 차례예요.\n백이 두 눈을 못 만들게 하는 급소를 먼저 차지해보세요.',
+    rows: ['.......','.XXXXX.','XOOOOOX','XO.*.OX','XOOOOOX','.XXXXX.','.......'],
+    ok: '잡았어요! 이제 백은 눈이 하나뿐이라 결국 잡혀요. 두 눈을 만드는 자리가 서로의 급소예요.' },
+  { title: '축 (사다리)', toPlay: 1, type: 'move', ladder: true,
+    text: '단수를 계속 몰아서 판 끝까지 잡는 수를 "축"이라고 해요.\n백 한 점을 단수로 몰아보세요. 어느 쪽에서 단수를 쳐야 계속 몰 수 있을지 잘 보세요.',
+    rows: ['.........','.........','.........','....*....','...XO....','....XX...','.........','.........','.........'],
+    bad: '그쪽으로 단수를 치면 백이 위로 나와서 활로가 3개가 돼요. 반대쪽에서 쳐보세요.',
+    ok: '축으로 잡았어요! 백은 도망갈수록 계속 단수가 되다가 판 끝에서 잡혀요.' },
+  { title: '집 세기', toPlay: 1, type: 'choice',
+    text: '돌로 둘러싼 빈 점을 "집"이라고 해요. 끝나면 집과 따낸 돌을 더해 많은 쪽이 이겨요. 백은 나중에 두니까 6.5집(덤)을 더 받아요.\n이 판에서 흑 집은 몇 집일까요?',
+    rows: ['..XO...','..XO...','..XO...','..XO...','..XO...','..XO...','..XO...'],
+    choices: ['12집', '14집', '21집'], answer: 1,
+    ok: '맞아요! 흑 집은 2줄 × 7칸 = 14집, 백 집은 3줄 × 7칸 = 21집이에요.' },
+  { title: '이제 실전!', toPlay: 1, type: 'finish',
+    text: '기본 규칙을 다 배웠어요.\n9줄 바둑판에서 초급 AI와 한 판 둬보세요. 막히면 "힌트"를 누르면 돼요.',
+    rows: ['.........','.........','.........','.........','.........','.........','.........','.........','.........'] }
+];
+root.LESSONS = L;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+const { Board, BLACK, WHITE, PASS } = GO;
+const KOMI = 6.5, LVN = ['초급','중급','고급'];
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('sudam.v1.'+k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('sudam.v1.'+k, JSON.stringify(v)); }catch(e){} }
+};
+let settings = Object.assign({ sound:true, coords:true, confirm:false, level:0, size:9, color:1, pvpSize:9 }, store.get('settings',{}));
+let rec = Object.assign({ games:[], grade:0, lessons:{} }, store.get('rec',{}));
+let G = store.get('game', null);    // 진행 중 대국 { mode, n, level, human, moves, hints, undos }
+let B = null;                         // 현재 판
+let anim = null, thinkGhost = null;
+let thinking = false, aiToken = 0, scoring = null, hintMove = null, pending = null, screen = 'home';
+const $ = id => document.getElementById(id);
+let toastT; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
+function show(n){ screen=n; document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===n)); if(n==='home') renderHome(); if(n==='learn') renderLessons(); if(n==='records') renderRecords(); window.scrollTo(0,0); }
+function closeAll(){ document.querySelectorAll('.dim').forEach(d=>d.classList.remove('on')); }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeAll);
+document.querySelectorAll('.dim').forEach(d=>d.addEventListener('click',e=>{ if(e.target===d) closeAll(); }));
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ closeAll(); show('home'); });
+function ask(title, text, yes, onYes){ $('askTitle').textContent=title; $('askText').textContent=text; $('askYes').textContent=yes; $('askYes').onclick=()=>{ closeAll(); onYes(); }; $('askModal').classList.add('on'); }
+
+// ---------- 기력 ----------
+const gradeName = g => g < 30 ? (30-g)+'급' : (g-29)+'단';
+const CAP = [11, 19, 30], FLOOR = [0, 12, 20]; // 초급 19급, 중급 11급, 고급 1단 까지
+function renderGrade(){
+  $('myGrade').textContent = gradeName(rec.grade);
+  $('gradeBar').style.width = Math.min(100, rec.grade/32*100)+'%';
+  const lv = rec.grade < 11 ? 0 : rec.grade < 19 ? 1 : 2;
+  $('gradeTip').textContent = '추천 상대: '+LVN[lv]+' · 이기면 기력이 올라가요';
+}
+
+// ---------- 소리 ----------
+let actx = null;
+function clack(){
+  if (!settings.sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t = actx.currentTime, len = 0.09, buf = actx.createBuffer(1, actx.sampleRate*len, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++){ const k=i/d.length; d[i]=(Math.random()*2-1)*Math.pow(1-k,6); }
+    const src=actx.createBufferSource(); src.buffer=buf;
+    const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2300; f.Q.value=1.4;
+    const g=actx.createGain(); g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.01,t+len);
+    src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t);
+  }catch(e){}
+}
+
+// ---------- 바둑판 그리기 ----------
+const LET = 'ABCDEFGHJKLMNOPQRST';
+function stars(n){ if (n===9) return [[2,2],[6,2],[4,4],[2,6],[6,6]]; if (n===13) return [[3,3],[9,3],[6,6],[3,9],[9,9]]; return [[3,3],[9,3],[15,3],[3,9],[9,9],[15,9],[3,15],[9,15],[15,15]]; }
+function drawBoard(el, b, o){
+  o = o || {};
+  const n = b.n, V = n+1, coords = o.coords && settings.coords, U = el.id || 'bd'; // 판마다 그라데이션 이름을 따로 (숨은 판과 겹치면 돌이 안 보임)
+  let s = '<svg viewBox="0 0 '+V+' '+V+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+n+'줄 바둑판">'+
+    '<defs><radialGradient id="'+U+'gb" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#777"/><stop offset=".45" stop-color="#222"/><stop offset="1" stop-color="#050505"/></radialGradient>'+
+    '<radialGradient id="'+U+'gw" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#ece7da"/><stop offset="1" stop-color="#cfc7b5"/></radialGradient>'+
+    '<filter id="'+U+'sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx=".04" dy=".07" stdDeviation=".05" flood-color="#3a2408" flood-opacity=".55"/></filter></defs>';
+  const sw = n>=19 ? .035 : .04;
+  for (let i=1;i<=n;i++){ s += '<line x1="1" y1="'+i+'" x2="'+n+'" y2="'+i+'" stroke="#3B2A17" stroke-width="'+sw+'"/><line x1="'+i+'" y1="1" x2="'+i+'" y2="'+n+'" stroke="#3B2A17" stroke-width="'+sw+'"/>'; }
+  s += '<rect x="1" y="1" width="'+(n-1)+'" height="'+(n-1)+'" fill="none" stroke="#3B2A17" stroke-width="'+(sw*2)+'"/>';
+  for (const [x,y] of stars(n)) s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r="'+(n>=19?.11:.1)+'" fill="#3B2A17"/>';
+  if (coords){ const fs = n>=19 ? .34 : .36;
+    for (let i=0;i<n;i++){ s += '<text x="'+(i+1)+'" y=".5" font-size="'+fs+'" text-anchor="middle" dominant-baseline="middle" fill="#5a3d1c" font-family="serif">'+LET[i]+'</text>';
+      s += '<text x=".45" y="'+(i+1)+'" font-size="'+fs+'" text-anchor="middle" dominant-baseline="middle" fill="#5a3d1c" font-family="serif">'+(n-i)+'</text>'; } }
+  // 집 표시
+  if (o.terr){ for (let y=0;y<n;y++) for (let x=0;x<n;x++){ const p=b.pt(x,y), t=o.terr[p]; if (!t) continue; s += '<rect x="'+(x+1-.16)+'" y="'+(y+1-.16)+'" width=".32" height=".32" rx=".04" fill="'+(t===BLACK?'#141414':'#f7f3ea')+'" stroke="'+(t===BLACK?'none':'#8a7f6a')+'" stroke-width=".03" opacity=".9"/>'; } }
+  for (let y=0;y<n;y++) for (let x=0;x<n;x++){
+    const p=b.pt(x,y), v=b.c[p]; if (v!==BLACK && v!==WHITE) continue;
+    const dead = o.dead && o.dead[p];
+    const drop = o.anim && o.anim.drop===p && Date.now()<o.anim.until;
+    s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r=".47" fill="url(#'+U+(v===BLACK?'gb':'gw')+')" filter="url(#'+U+'sh)"'+(dead?' opacity=".38"':'')+(drop?' class="drop"':'')+'/>';
+    if (dead) s += '<path d="M'+(x+1-.18)+' '+(y+1-.18)+'l.36 .36M'+(x+1+.18)+' '+(y+1-.18)+'l-.36 .36" stroke="'+(v===BLACK?'#fff':'#333')+'" stroke-width=".07" stroke-linecap="round"/>';
+  }
+  if (o.anim && Date.now()<o.anim.until) for (const g of o.anim.gone){ const [x,y]=b.xy(g.p); s += '<circle class="gone" cx="'+(x+1)+'" cy="'+(y+1)+'" r=".47" fill="url(#'+U+(g.v===BLACK?'gb':'gw')+')"/>'; }
+  if (o.last!=null && o.last>=0){ const [x,y]=b.xy(o.last), v=b.c[o.last]; if (v===BLACK||v===WHITE) s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r=".17" fill="none" stroke="'+(v===BLACK?'#fff':'#A8322D')+'" stroke-width=".07"/>'; }
+  if (o.marks) for (const m of o.marks){ const [x,y]=b.xy(m.p); if (m.kind==='x') s += '<path d="M'+(x+1-.22)+' '+(y+1-.22)+'l.44 .44M'+(x+1+.22)+' '+(y+1-.22)+'l-.44 .44" stroke="#A8322D" stroke-width=".09" stroke-linecap="round"/>';
+    else if (m.kind==='ring') s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r=".42" fill="none" stroke="#2F6B3A" stroke-width=".09" stroke-dasharray=".18 .1"/>'; else if (m.kind==='dot') s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r=".14" fill="#A8322D"/>'; }
+  if (o.ghost!=null){ const [x,y]=b.xy(o.ghost.p); s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r=".47" fill="url(#'+U+(o.ghost.col===BLACK?'gb':'gw')+')" opacity="'+(o.ghost.think?'.38':'.55')+'"'+(o.ghost.think?' class="tg"':'')+'/>'; }
+  s += '</svg>';
+  el.innerHTML = s;
+}
+function pointFrom(el, n, e){
+  const r = el.getBoundingClientRect(), V = n+1;
+  const x = Math.round((e.clientX - r.left)/r.width*V) - 1, y = Math.round((e.clientY - r.top)/r.height*V) - 1;
+  return (x<0||y<0||x>=n||y>=n) ? null : [x,y];
+}
+
+// ---------- 홈 ----------
+function renderHome(){
+  renderGrade();
+  const live = G && !G.over;
+  $('resume').hidden = !live;
+  if (live) $('rsInfo').textContent = (G.mode==='pvp' ? '둘이서 · ' : G.mode==='online' ? '온라인 · 방 '+G.code+' · ' : 'AI '+LVN[G.level]+' · ')+G.n+'줄 · '+G.moves.length+'수';
+  const done = Object.keys(rec.lessons).length;
+  $('learnInfo').textContent = done ? done+' / '+LESSONS.length+'강 완료' : '완전 처음이라면 여기부터 · '+LESSONS.length+'강';
+}
+$('resume').onclick = ()=>{ openGame(); };
+$('goPlay').onclick = ()=>{ renderSetup(); $('setup').classList.add('on'); };
+$('goPvp').onclick = ()=>{ chips('pSize', settings.pvpSize, v=>{ settings.pvpSize=v; store.set('settings',settings); $('goPvp').onclick(); }); $('pvpSetup').classList.add('on'); };
+$('goLearn').onclick = ()=>show('learn');
+$('goRecords').onclick = ()=>show('records');
+$('goRules').onclick = ()=>show('rules');
+function chips(id, val, f){ document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===val)); b.onclick=()=>f(+b.dataset.v); }); }
+function renderSetup(){
+  chips('sLevel', settings.level, v=>{ settings.level=v; store.set('settings',settings); renderSetup(); });
+  chips('sSize', settings.size, v=>{ settings.size=v; store.set('settings',settings); renderSetup(); });
+  chips('sColor', settings.color, v=>{ settings.color=v; store.set('settings',settings); renderSetup(); });
+  const t = settings.level===2 ? (settings.size===9 ? '고급 AI는 한 수에 4초 정도 생각해요.' : '판이 클수록 AI가 생각하는 시간이 길어져요 (한 수 5~6초).') : settings.size===19 ? '19줄은 한 판이 길어요. 처음이면 9줄을 추천해요.' : '';
+  $('sTip').textContent = t;
+}
+$('startGame').onclick = ()=>{ closeAll(); newGame('ai', settings.size, settings.level, settings.color||(Math.random()<.5?BLACK:WHITE)); };
+$('startPvp').onclick = ()=>{ closeAll(); newGame('pvp', settings.pvpSize, 0, BLACK); };
+
+// ---------- 대국 ----------
+function logResult(winner, how, diff){
+  if (!G || G.logged) return; G.logged = true;
+  const entry = { t:Date.now(), mode:G.mode, n:G.n, level:G.level, human:G.human, winner, how, diff, moves:G.moves.length, hints:G.hints, undos:G.undos };
+  let change = 0;
+  if (G.mode==='ai'){
+    const won = winner===G.human;
+    if (won && !G.hints && !G.undos){ const step = G.n===9?1:G.n===13?2:3; const cap = CAP[G.level]; if (rec.grade < cap){ const ng = Math.min(cap, rec.grade+step); change = ng-rec.grade; rec.grade = ng; } }
+    if (!won && winner && rec.grade > FLOOR[G.level] && rec.grade > 0 && how!=='quit'){ rec.grade--; change = -1; }
+    entry.result = won ? 'win' : (winner ? 'lose' : 'draw');
+  }
+  if (G.mode==='online'){ entry.result = !winner ? 'draw' : winner===G.human ? 'win' : 'lose'; entry.opp = G.opp; entry.code = G.code; }
+  entry.change = change;
+  rec.games.unshift(entry); if (rec.games.length>300) rec.games.length=300;
+  store.set('rec', rec);
+  return change;
+}
+function newGame(mode, n, level, human){
+  if (G && !G.over && G.mode==='ai' && G.moves.length>4) logResult(3-G.human, 'quit');
+  if (G && G.mode==='online') netStop();
+  G = { mode, n, level, human, moves:[], hints:0, undos:0, over:false };
+  hintMove=null; scoring=null; pending=null;
+  B = new Board(n); save(); openGame();
+}
+function rebuild(){ B = new Board(G.n); for (const m of G.moves) B.play(m); }
+function save(){ store.set('game', G); }
+function openGame(){
+  if (!B || B.n!==G.n || B.moves!==G.moves.length) rebuild();
+  scoring = null; show('game'); if (G.mode==='online') netWatch(); renderGame();
+  if (!G.over && G.mode==='ai' && B.toMove!==G.human) aiTurn();
+}
+function names(){
+  if (G.mode==='pvp') return ['흑','백'];
+  if (G.mode==='online'){ const me='나 ('+(NET.name()||'나')+')', op=G.opp||'상대'; return G.human===BLACK ? [me, op] : [op, me]; }
+  return G.human===BLACK ? ['나', 'AI '+LVN[G.level]] : ['AI '+LVN[G.level], '나'];
+}
+function renderGame(){
+  const [nb, nw] = names();
+  $('gTitle').textContent = G.mode==='pvp' ? '둘이서 · '+G.n+'줄' : G.mode==='online' ? '온라인 · '+G.n+'줄' : 'AI '+LVN[G.level]+' · '+G.n+'줄';
+  $('netBar').hidden = G.mode!=='online'; if (G.mode==='online' && netRoom) NET.statusBar($('netBar'), netRoom);
+  $('gMove').textContent = G.moves.length+'수';
+  $('pBName').textContent = nb; $('pWName').textContent = nw;
+  $('pBCap').textContent = '따낸 돌 '+B.caps[BLACK];
+  $('pWCap').textContent = '따낸 돌 '+B.caps[WHITE]+' · 덤 '+KOMI;
+  $('pB').classList.toggle('turn', !scoring && B.toMove===BLACK); $('pW').classList.toggle('turn', !scoring && B.toMove===WHITE);
+  const marks = []; if (hintMove!=null && hintMove>=0) marks.push({p:hintMove, kind:'ring'});
+  if (B.ko>=0 && !scoring) marks.push({p:B.ko, kind:'x'});
+  drawBoard($('goban'), B, { coords:true, last:scoring?null:B.last, marks, terr: scoring&&scoring.sc.terr, dead: scoring&&scoring.dead, anim,
+    ghost: pending!=null ? {p:pending, col:B.toMove} : (thinking && thinkGhost!=null ? {p:thinkGhost, col:B.toMove, think:true} : null) });
+  if (anim) anim.until = 0; // 모션은 한 번만 (다시 그릴 때 또 떨어지지 않게)
+  const myTurn = !G.over && !scoring && !thinking && (G.mode==='pvp' || B.toMove===G.human);
+  if (G.mode==='online' && scoring){ const ok = scoring.ok||{}; $('scoreOk').textContent = ok['s'+G.seat] ? '상대 확인 기다리는 중' : (ok['s'+(1-G.seat)] ? '상대가 확정함 · 나도 확정' : '계가 확정'); $('scoreOk').disabled = !!ok['s'+G.seat]; } else { $('scoreOk').textContent='계가 확정'; $('scoreOk').disabled=false; }
+  $('playTools').hidden = !!scoring; $('scoreTools').hidden = !scoring;
+  $('undoBtn').disabled = !myTurn || G.moves.length < (G.mode==='pvp'?1:1);
+  if (G.mode==='online') $('undoBtn').disabled = true;
+  $('hintBtn').disabled = !myTurn || G.mode==='online'; $('passBtn').disabled = !myTurn; $('resignBtn').disabled = G.over || !!scoring || (G.mode==='ai' && thinking);
+  let st;
+  if (scoring){ const sc = scoring.sc; st = '계가 · 흑 '+sc.black+' : 백 '+sc.white+' — 죽은 돌이 틀리면 눌러서 고쳐요'; }
+  else if (G.mode==='online' && netWaitScore) st = '계가 준비 중…';
+  else if (G.mode==='online' && !G.over && B.toMove!==G.human) st = (G.opp||'상대')+' 차례 · 기다리는 중…'+(B.last===PASS?' (내가 한 수 쉼)':'');
+  else if (thinking) st = 'AI가 생각하는 중…';
+  else if (G.over) st = '대국 끝';
+  else { const who = B.toMove===BLACK ? '흑' : '백'; st = (G.mode==='pvp' ? who+' 차례' : (B.toMove===G.human ? '내 차례 ('+who+')' : who+' 차례'));
+    if (B.last===PASS) st += ' · 상대가 한 수 쉬었어요'; if (settings.confirm && pending!=null) st = '한 번 더 누르면 착수'; }
+  $('gStatus').textContent = st;
+}
+function placeWithAnim(p){ // 돌 놓기 + 따낸 돌 기록 (모션용)
+  const before = B.c.slice(); B.play(p);
+  const gone = []; if (p!==PASS) for (let q=0;q<B.size;q++) if ((before[q]===BLACK||before[q]===WHITE) && B.c[q]===0) gone.push({p:q, v:before[q]});
+  anim = { drop: p, gone, until: Date.now()+750 };
+}
+function playMove(p){
+  if (!B.isLegal(p, B.toMove)){
+    if (B.c[p]!==0) toast('이미 돌이 있어요'); else if (p===B.ko) toast('패예요. 바로 되따낼 수 없어요'); else toast('착수금지 자리예요 (활로가 없어요)');
+    return false;
+  }
+  placeWithAnim(p); G.moves.push(p); hintMove=null; pending=null; clack();
+  if (B.lastCap) toast(B.lastCap+'점 따냈어요');
+  save(); return true;
+}
+$('goban').addEventListener('click', e=>{
+  if (!G || G.over || thinking) return;
+  const xy = pointFrom($('goban'), G.n, e); if (!xy) return;
+  const p = B.pt(xy[0], xy[1]);
+  if (scoring){ toggleDead(p); return; }
+  if ((G.mode==='ai' || G.mode==='online') && B.toMove!==G.human) return;
+  if (settings.confirm && pending!==p){ if (B.isLegal(p,B.toMove)){ pending=p; renderGame(); } else playMove(p); return; }
+  if (playMove(p)){ renderGame(); if (G.mode==='online') netSend(p); if (G.mode==='ai') aiTurn(); }
+});
+let hoverP = null;
+$('goban').addEventListener('pointermove', e=>{
+  if (e.pointerType!=='mouse' || !G || G.over || thinking || scoring || settings.confirm) return;
+  if ((G.mode==='ai' || G.mode==='online') && B.toMove!==G.human) return;
+  const xy = pointFrom($('goban'), G.n, e); const p = xy ? B.pt(xy[0],xy[1]) : null;
+  if (p===hoverP) return; hoverP = p;
+  const marks=[]; if (hintMove!=null&&hintMove>=0) marks.push({p:hintMove,kind:'ring'}); if (B.ko>=0) marks.push({p:B.ko,kind:'x'});
+  drawBoard($('goban'), B, { coords:true, last:B.last, marks, ghost: (p!=null && B.isLegal(p,B.toMove)) ? {p, col:B.toMove} : null });
+});
+$('goban').addEventListener('pointerleave', ()=>{ hoverP=null; if (G && screen==='game') renderGame(); });
+
+function aiTurn(){
+  if (G.over || G.mode!=='ai' || B.toMove===G.human) return;
+  thinking = true; thinkGhost = null; const token = ++aiToken; renderGame();
+  $('think').hidden = false; $('thinkBar').style.width='0%';
+  const bud = GO.BUDGET[G.level](G.n), budget = { playouts: bud.playouts, timeMs: Math.min(bud.timeMs, 2800) };
+  const s = GO.createSearch(B, { komi:KOMI }), t0 = Date.now(), target = 1200 + Math.random()*1800;
+  const oppPassed = B.last===PASS; let lastGesture = 0;
+  (function step(){
+    if (token!==aiToken) return;
+    const t1 = Date.now();
+    const searching = s.done < budget.playouts && Date.now()-t0 < budget.timeMs;
+    if (searching) while (Date.now()-t1 < 14 && s.done < budget.playouts && Date.now()-t0 < budget.timeMs) s.iterate(20);
+    const el = Date.now()-t0;
+    $('thinkBar').style.width = Math.min(100, el/Math.max(target, 1)*100)+'%';
+    // 고민하는 동작: 유력한 자리 몇 곳에 돌을 살짝 올려봄
+    if (el - lastGesture > 520 && s.done > 30 && el < target - 300){ lastGesture = el;
+      const kids = s.result().kids.filter(k=>k.move!==PASS).slice(0,4);
+      thinkGhost = kids.length && Math.random()<.85 ? kids[(Math.random()*kids.length)|0].move : null; renderGame(); }
+    if (searching || el < target){ setTimeout(step, searching ? 0 : 60); return; }
+    const r = s.result(), d = GO.decide(B, r, G.level, KOMI, oppPassed);
+    thinking = false; thinkGhost = null; $('think').hidden = true;
+    if (d.resign){ endGame(G.human, 'resign'); return; }
+    placeWithAnim(d.move); G.moves.push(d.move); clack(); save();
+    if (d.move===PASS) toast('AI가 한 수 쉬었어요'+(oppPassed?'':' — 끝내려면 나도 한 수 쉼'));
+    else if (B.lastCap) toast('AI가 '+B.lastCap+'점 따냈어요');
+    renderGame();
+    if (B.passes>=2) startScoring();
+  })();
+}
+$('passBtn').onclick = ()=>{
+  if (thinking || G.over) return;
+  if (G.mode==='online'){ if (B.toMove!==G.human || scoring) return; B.play(PASS); G.moves.push(PASS); hintMove=null; pending=null; save(); netSend(PASS); toast('한 수 쉬었어요'); renderGame(); return; }
+  B.play(PASS); G.moves.push(PASS); hintMove=null; pending=null; save();
+  if (B.passes>=2){ startScoring(); return; }
+  toast(G.mode==='pvp' ? '한 수 쉬었어요' : '한 수 쉬었어요');
+  renderGame(); if (G.mode==='ai') aiTurn();
+};
+$('undoBtn').onclick = ()=>{
+  if (thinking || G.over || !G.moves.length) return;
+  let k = 1;
+  if (G.mode==='ai'){ k = B.toMove===G.human ? 2 : 1; if (G.moves.length < k) k = G.moves.length; }
+  G.moves.splice(G.moves.length-k, k); G.undos++; hintMove=null; pending=null; rebuild(); save(); renderGame();
+  if (G.mode==='ai' && B.toMove!==G.human) aiTurn();
+};
+$('hintBtn').onclick = ()=>{
+  if (thinking || G.over) return;
+  G.hints++; save(); thinking = true; renderGame(); $('think').hidden=false;
+  const s = GO.createSearch(B, { komi:KOMI }), t0 = Date.now(), lim = G.n===9 ? 4000 : 2500, token = ++aiToken;
+  (function step(){
+    if (token!==aiToken) return;
+    const t1 = Date.now(); while (Date.now()-t1<14 && s.done<lim && Date.now()-t0<2500) s.iterate(20);
+    $('thinkBar').style.width = Math.min(100, s.done/lim*100)+'%';
+    if (s.done<lim && Date.now()-t0<2500){ setTimeout(step,0); return; }
+    const r = s.result(); thinking=false; $('think').hidden=true;
+    hintMove = r.move; if (r.move===PASS) toast('지금은 한 수 쉬는 게 좋아 보여요'); else toast('초록 점선 자리를 추천해요');
+    renderGame();
+  })();
+};
+$('resignBtn').onclick = ()=>{
+  if (G.over) return;
+  if (G.mode==='online'){ ask('기권할까요?', '상대가 이긴 것으로 끝나요.', '기권', ()=>netEnd(3-G.human, 'resign')); return; }
+  if (G.mode==='pvp'){ const who = B.toMove===BLACK?'흑':'백'; ask(who+' 기권', who+'이 기권하고 대국을 끝낼까요?', '기권', ()=>endGame(3-B.toMove,'resign')); return; }
+  ask('기권할까요?', '이 대국은 패배로 기록돼요.', '기권', ()=>{ aiToken++; thinking=false; $('think').hidden=true; endGame(3-G.human,'resign'); });
+};
+$('gHome').onclick = ()=>{ if (G && G.mode==='online'){ show('home'); return; } aiToken++; thinking=false; $('think').hidden=true; pending=null; scoring=null; show('home'); };
+
+// ---------- 온라인 대전 ----------
+let netRoom = null, netStopFn = null, netPres = null, netOn = false, netWaitScore = false;
+const NG = 'baduk';
+const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
+function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
+function oppName(room, mySeat){ for (const k in room.seats||{}) if (+k.slice(1)!==mySeat) return room.seats[k].name; return '상대'; }
+function netStart(room, seat){
+  const st = parseSt(room);
+  if (room.host===NET.uid && !st.moves){
+    const o = room.opts||{}; const blackSeat = o.color===1 ? 0 : o.color===2 ? 1 : (Math.random()<.5?0:1);
+    NET.commit(NG, room.code, room.seq||0, cur=>{ const s=parseSt(cur); if (s.moves) return undefined; cur.st = JSON.stringify({ moves:[], black:blackSeat, round:1 }); return cur; });
+  }
+  newOnline(room, seat, st.moves ? st : null);
+}
+function newOnline(room, seat, st){
+  netStop(); aiToken++; thinking=false; $('think').hidden=true;
+  const o = room.opts||{};
+  G = { mode:'online', code:room.code, seat, n:o.n||9, level:0, human: st ? (st.black===seat?BLACK:WHITE) : (seat===0 ? (o.color===2?WHITE:BLACK) : (o.color===2?BLACK:WHITE)), opp: oppName(room, seat), round: st ? st.round : 1, moves: st ? st.moves.slice() : [], hints:0, undos:0, over:false };
+  netRoom = room; hintMove=null; scoring=null; pending=null; anim=null;
+  B = new Board(G.n); for (const m of G.moves) B.play(m);
+  save(); openGame();
+}
+function scoreFrom(sc){ const dead = new Uint8Array(B.size); for (const p of sc.dead||[]) dead[p]=1; return { dead, sc: GO.scoreTerritory(B, dead, KOMI), ok: sc.ok||{} }; }
+function netWatch(){
+  if (netOn || !window.NET) return; netOn = true;
+  const code = G.code, seat = G.seat;
+  NET.presence(NG, code).then(f=>{ netPres = f; }).catch(()=>{});
+  NET.watch(NG, code, room=>{
+    if (!G || G.mode!=='online' || G.code!==code || !room) return;
+    netRoom = room; G.opp = oppName(room, seat);
+    const st = parseSt(room); if (!st.moves){ if (screen==='game') renderGame(); return; }
+    if (st.round!==G.round){
+      Object.assign(G, { round:st.round, human: st.black===seat?BLACK:WHITE, moves:st.moves.slice(), over:false, logged:false, winner:null });
+      B = new Board(G.n); for (const m of G.moves) B.play(m); anim=null; scoring=null; save(); show('game'); renderGame(); toast('새 판 시작! 이번엔 '+(G.human===BLACK?'흑(먼저)':'백')+'이에요'); return; }
+    G.human = st.black===seat?BLACK:WHITE;
+    const same = G.moves.every((m,i)=>st.moves[i]===m);
+    if (st.moves.length > G.moves.length && same){
+      for (let i=G.moves.length;i<st.moves.length;i++){ const m=st.moves[i]; if (m===PASS){ B.play(PASS); G.moves.push(PASS); if (i===st.moves.length-1 && !st.score) toast((G.opp||'상대')+'이(가) 한 수 쉬었어요'+(B.passes>=2?'':' — 끝내려면 나도 한 수 쉼')); } else { placeWithAnim(m); G.moves.push(m); clack(); if (B.lastCap) toast((G.opp||'상대')+'이(가) '+B.lastCap+'점 따냈어요'); } }
+      save();
+    } else if (!same || st.moves.length < G.moves.length){ G.moves = st.moves.slice(); B = new Board(G.n); for (const m of G.moves) B.play(m); scoring=null; save(); }
+    // 계가: 두 번째로 쉰 사람이 죽은 돌을 정해서 올림
+    if (st.score){ netWaitScore=false; const prevOk = scoring && scoring.ok; scoring = scoreFrom(st.score);
+      if (st.score.ok && st.score.ok.s0 && st.score.ok.s1 && !G.over){ const sc = scoring.sc; endGame(sc.diff>0?BLACK:WHITE, 'score', sc); return; } }
+    else { if (scoring) scoring = null;
+      if (B.passes>=2 && !G.over){ const lastBy = (G.moves.length % 2 === 1) ? (st.black) : (1-st.black); // 마지막 수를 둔 자리
+        if (lastBy===seat){ netWaitScore=false; netComputeScore(); } else netWaitScore = true; } }
+    if (st.end && !G.over){ toast(st.end.how==='resign' ? (st.end.winner===G.human?'상대가 기권했어요':'기권했어요') : ''); endGame(st.end.winner, st.end.how); return; }
+    if (screen==='game') renderGame();
+  }).then(f=>{ if (netOn) netStopFn = f; else f(); });
+}
+const netSeq = () => netRoom ? (netRoom.seq||0) : 0;
+function netSend(p){
+  const n = G.moves.length - 1;
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(p); delete s.score; cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
+}
+let netScoreKey = null;
+function netComputeScore(){
+  const key = G.round+':'+G.moves.length; if (netScoreKey===key) return; netScoreKey = key;
+  const own = GO.ownership(B, KOMI, G.n===9 ? 400 : G.n===13 ? 300 : 200);
+  const dead = GO.guessDead(B, own), list = []; for (let p=0;p<B.size;p++) if (dead[p]) list.push(p);
+  netScore(list, {}, true);
+}
+function netScore(dead, ok, initial){
+  const list = Array.isArray(dead) ? dead : (()=>{ const l=[]; for (let p=0;p<dead.length;p++) if (dead[p]) l.push(p); return l; })();
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==G.moves.length) return undefined; if (initial && s.score) return undefined; s.score = { dead:list, ok }; cur.st=JSON.stringify(s); return cur; })
+    .then(ok2=>{ if (!ok2 && !initial) setTimeout(()=>netScore(list, ok), 300); else if (!ok2 && initial){ netScoreKey=null; } });
+}
+function netScoreOk(){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.score) return undefined; s.score.ok = Object.assign({}, s.score.ok||{}, { ['s'+G.seat]: true }); cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>{ if (!ok) toast('다시 눌러주세요'); });
+}
+function netScoreBack(){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves) return undefined; delete s.score; if (s.moves[s.moves.length-1]===PASS) s.moves.pop(); cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>{ if (ok) toast('계가를 취소하고 계속 둬요'); });
+}
+function netEnd(winner, how){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
+  endGame(winner, how);
+}
+function netRematch(){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (s.round!==G.round) return cur; cur.st = JSON.stringify({ moves:[], black: 1-(s.black||0), round:(s.round||1)+1 }); return cur; })
+    .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); });
+}
+const NETCFG = {
+  game: NG, title:'바둑', max:2,
+  optsHTML: '<span class="nt-lbl">바둑판</span><div class="nt-chips" id="nbN"><button data-v="9">9줄</button><button data-v="13">13줄</button><button data-v="19">19줄</button></div><span class="nt-lbl">내 돌</span><div class="nt-chips" id="nbC"><button data-v="1">흑 (먼저)</button><button data-v="2">백 (덤 6.5)</button><button data-v="0">무작위</button></div>',
+  bindOpts(){ const o = Object.assign({ n:9, c:1 }, store.get('netopt',{}));
+    const bind=(id,k)=>document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o[k])); b.onclick=()=>{ o[k]=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; });
+    bind('nbN','n'); bind('nbC','c'); },
+  getOpts(){ const o = Object.assign({ n:9, c:1 }, store.get('netopt',{})); return { opts:{ n:o.n, color:o.c }, seat:0 }; },
+  describe: o => (o.n||9)+'줄 · 방장 '+(o.color===1?'흑':o.color===2?'백':'무작위'),
+  seatName: s => s===0 ? '방장' : '',
+  onStart: (room, seat) => { closeAll(); netStart(room, seat); }
+};
+if (window.NET){ $('goOnline').hidden = false; $('goOnline').onclick = ()=>NET.open(NETCFG);
+  const lc = NET.linkCode(); if (lc){ NET.clearLink(); setTimeout(()=>NET.open(NETCFG, lc), 300); } }
+
+// ---------- 계가 ----------
+function startScoring(){
+  const own = GO.ownership(B, KOMI, G.n===9 ? 400 : G.n===13 ? 300 : 200);
+  const dead = GO.guessDead(B, own);
+  scoring = { dead, sc: GO.scoreTerritory(B, dead, KOMI) };
+  toast('둘 다 쉬어서 계가해요');
+  renderGame();
+}
+function toggleDead(p){
+  const v = B.c[p]; if (v!==BLACK && v!==WHITE) return;
+  const g = B.stones(p), to = scoring.dead[p] ? 0 : 1;
+  for (const q of g) scoring.dead[q] = to;
+  if (G.mode==='online'){ netScore(scoring.dead, {}); }
+  scoring.sc = GO.scoreTerritory(B, scoring.dead, KOMI); renderGame();
+}
+$('scoreBack').onclick = ()=>{ if (G.mode==='online'){ netScoreBack(); return; } scoring=null; // 마지막 쉼 하나 취소하고 계속
+  G.moves.pop(); rebuild(); save(); renderGame(); if (G.mode==='ai' && B.toMove!==G.human) aiTurn(); };
+$('scoreOk').onclick = ()=>{ if (G.mode==='online'){ netScoreOk(); return; } const sc = scoring.sc; endGame(sc.diff>0?BLACK:WHITE, 'score', sc); };
+function endGame(winner, how, sc){
+  G.over = true; G.winner = winner; save();
+  const change = logResult(winner, how, sc ? sc.diff : null);
+  const [nb, nw] = names();
+  const wName = winner===BLACK ? nb : nw;
+  if (G.mode==='ai' || G.mode==='online') $('rTitle').textContent = winner===G.human ? '이겼어요!' : '졌어요';
+  else $('rTitle').textContent = (winner===BLACK?'흑':'백')+' 승';
+  $('rSub').textContent = (how==='resign' ? (wName===nb?'백':'흑')+' 기권' : how==='score' ? (winner===BLACK?'흑':'백')+' '+Math.abs(sc.diff)+'집 승' : '') + ' · '+G.n+'줄 · '+G.moves.length+'수';
+  if (sc) $('rScore').innerHTML = '<div class="card"><span class="muted">흑 · '+nb+'</span><b>'+sc.black+'</b><span class="muted" style="font-size:12px">집 '+sc.tb+' + 따낸 돌 '+sc.capB+'</span></div><div class="card"><span class="muted">백 · '+nw+'</span><b>'+sc.white+'</b><span class="muted" style="font-size:12px">집 '+sc.tw+' + 따낸 돌 '+sc.capW+' + 덤 '+KOMI+'</span></div>';
+  else $('rScore').innerHTML = '';
+  const rg = $('rGrade');
+  if (G.mode==='ai'){ rg.hidden=false;
+    rg.innerHTML = '<span class="lbl">내 기력</span><b class="title" style="font-size:24px">'+gradeName(rec.grade)+'</b><span class="muted" style="font-size:13px">'+(change>0?'▲ '+change+'급 올랐어요':change<0?'▼ 1급 내려갔어요':(winner===G.human && (G.hints||G.undos)?'무르기·힌트를 써서 기력은 그대로예요':winner===G.human && rec.grade>=CAP[G.level]?'이 단계로는 더 오를 수 없어요. 다음 단계에 도전해보세요':'그대로예요'))+'</span>'; }
+  else rg.hidden = true;
+  drawBoard($('rBoard'), B, { terr: sc && sc.terr, dead: scoring && scoring.dead });
+  scoring = null;
+  $('rAgain').textContent = G.mode==='online' ? '같은 상대와 한 판 더 (흑백 바꿈)' : '한 판 더';
+  $('rAgain').onclick = ()=> G.mode==='online' ? netRematch() : G.mode==='pvp' ? newGame('pvp', G.n, 0, BLACK) : newGame('ai', G.n, G.level, G.human);
+  show('result');
+}
+
+// ---------- 배우기 ----------
+let LI = 0, LB = null, lessonDone = false;
+function renderLessons(){
+  $('lessonList').innerHTML = LESSONS.map((l,i)=>'<button class="lrow'+(rec.lessons[i]?' done':'')+'" data-i="'+i+'"><span class="no">'+(rec.lessons[i]?'✓':i+1)+'</span><span style="flex-grow:1"><b style="font-family:var(--serif)">'+l.title+'</b></span><span class="muted">›</span></button>').join('');
+  document.querySelectorAll('.lrow').forEach(b=>b.onclick=()=>openLesson(+b.dataset.i));
+}
+function lessonBoard(les){
+  const n = les.rows.length, b = new Board(n), ans = [];
+  les.rows.forEach((r,y)=>[...r].forEach((ch,x)=>{ const p=b.pt(x,y); if (ch==='X'||ch==='O'){ b.c[p]=ch==='X'?1:2; b._rmEmp(p); } else if (ch==='*') ans.push(p); }));
+  b.toMove = les.toPlay; return { b, ans };
+}
+function openLesson(i){
+  LI = i; const les = LESSONS[i]; const { b, ans } = lessonBoard(les);
+  LB = { b, ans, marks:[] }; lessonDone = false;
+  $('lTitle').textContent = les.title; $('lNo').textContent = (i+1)+'/'+LESSONS.length;
+  $('lText').textContent = les.text;
+  $('lFeed').hidden = true; $('lNext').textContent = i===LESSONS.length-1 ? '목록으로' : '다음 강';
+  $('lRetry').hidden = les.type==='finish';
+  const ch = $('lChoice');
+  if (les.type==='choice'){ ch.hidden=false; ch.innerHTML = les.choices.map((c,k)=>'<button class="btn plain" data-k="'+k+'">'+c+'</button>').join('');
+    ch.querySelectorAll('button').forEach(bt=>bt.onclick=()=>{ if (lessonDone) return; const k=+bt.dataset.k; if (k===les.answer) lessonOk(); else feed(false,'다시 세어보세요. 흑 돌로 둘러싼 빈 점만 세요.'); }); }
+  else ch.hidden = true;
+  if (les.type==='finish'){ $('lNext').textContent = '9줄 초급과 대국'; }
+  show('lesson'); drawLesson();
+}
+function drawLesson(){ drawBoard($('lBoard'), LB.b, { last: LB.b.last>=0?LB.b.last:null, marks: LB.marks }); }
+function feed(good, text){ const f=$('lFeed'); f.hidden=false; f.className='feedback '+(good?'good':'bad'); f.textContent=text; }
+function lessonOk(){ lessonDone = true; rec.lessons[LI] = 1; store.set('rec', rec); feed(true, LESSONS[LI].ok); }
+$('lBoard').addEventListener('click', e=>{
+  const les = LESSONS[LI]; if (lessonDone || les.type==='choice' || les.type==='finish') return;
+  const xy = pointFrom($('lBoard'), LB.b.n, e); if (!xy) return;
+  const b = LB.b, p = b.pt(xy[0], xy[1]), col = les.toPlay;
+  if (les.type==='place'){ if (LB.ans.includes(p)){ b.c[p]=BLACK; b._rmEmp(p); clack(); drawLesson(); lessonOk(); } else feed(false,'거기는 화점이 아니에요. 판 위의 굵은 점을 찾아보세요.'); return; }
+  if (les.type==='illegal'){ if (LB.ans.includes(p)){ LB.marks=[{p,kind:'x'}]; drawLesson(); lessonOk(); } else if (b.c[p]) feed(false,'이미 돌이 있는 자리예요.'); else feed(false,'거기는 둘 수 있는 자리예요. 사방이 백 돌로 막힌 곳을 찾아보세요.'); return; }
+  // move
+  if (!b.isLegal(p, col)){ feed(false, b.c[p] ? '이미 돌이 있는 자리예요.' : '거기는 둘 수 없는 자리예요.'); return; }
+  if (!LB.ans.includes(p)){ feed(false, les.bad || '다시 생각해보세요. 힌트: 설명을 한 번 더 읽어보세요.'); return; }
+  b.play(p, col); clack();
+  if (les.showKo && b.ko>=0) LB.marks=[{p:b.ko, kind:'x'}];
+  drawLesson();
+  if (les.ladder){ // 축 진행 보여주기
+    const tgt = (()=>{ for (let q=0;q<b.size;q++) if (b.c[q]===WHITE) return q; })();
+    const r = GO.runLadder(b, tgt, BLACK); let k = 0; lessonDone = true;
+    feed(true, '백이 도망가는 대로 계속 단수를 쳐볼게요…');
+    (function next(){ if (k>=r.seq.length){ lessonOk(); return; } const [q,c]=r.seq[k++]; b.play(q,c); clack(); drawLesson(); setTimeout(next, 420); })();
+    return;
+  }
+  lessonOk();
+});
+$('lRetry').onclick = ()=>openLesson(LI);
+$('lNext').onclick = ()=>{
+  const les = LESSONS[LI];
+  if (les.type==='finish'){ rec.lessons[LI]=1; store.set('rec',rec); newGame('ai', 9, 0, BLACK); return; }
+  if (LI < LESSONS.length-1) openLesson(LI+1); else show('learn');
+};
+$('lBack').onclick = ()=>show('learn');
+
+// ---------- 기록 ----------
+function when(ts){ const d=new Date(ts), p=n=>(n<10?'0':'')+n; return (d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function renderRecords(){
+  const ai = rec.games.filter(g=>g.mode==='ai');
+  let h = '<div class="card"><div class="grade"><div><div class="lbl">내 기력</div><div class="g">'+gradeName(rec.grade)+'</div></div><div class="muted" style="font-size:13px">AI 대국 '+ai.length+'판 · 배우기 '+Object.keys(rec.lessons).length+'/'+LESSONS.length+'강</div></div></div>';
+  h += '<div class="grid3">'+[0,1,2].map(lv=>{ const g=ai.filter(x=>x.level===lv), w=g.filter(x=>x.result==='win').length; return '<div class="stat"><span>'+LVN[lv]+'</span><b>'+w+'승 '+(g.length-w)+'패</b><span>'+(g.length?Math.round(w/g.length*100)+'%':'-')+'</span></div>'; }).join('')+'</div>';
+  if (rec.games.length) h += '<div class="hist">'+rec.games.slice(0,60).map(g=>{
+    if (g.mode==='online') return '<div><span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span><span style="flex-grow:1">온라인 · '+(g.opp?g.opp+' 님 · ':'')+g.n+'줄 · '+g.moves+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 방 '+g.code+'</span></span><span class="muted">'+(g.how==='resign'?'기권':g.diff!=null?Math.abs(g.diff)+'집':'')+'</span></div>';
+    const res = g.mode==='pvp' ? '<span class="tag draw">'+(g.winner===BLACK?'흑':'백')+' 승</span>' : '<span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span>';
+    const how = g.how==='resign'?'기권':g.how==='quit'?'중단':g.diff!=null?Math.abs(g.diff)+'집':'';
+    return '<div>'+res+'<span style="flex-grow:1">'+(g.mode==='pvp'?'둘이서':'AI '+LVN[g.level])+' · '+g.n+'줄 · '+g.moves+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+(g.change?(g.change>0?' · ▲'+g.change+'급':' · ▼1급'):'')+'</span></span><span class="muted">'+how+'</span></div>'; }).join('')+'</div>';
+  else h += '<div class="card muted" style="text-align:center">아직 대국 기록이 없어요</div>';
+  $('recBody').innerHTML = h;
+}
+
+// ---------- 설정 ----------
+function renderSettings(){ document.querySelectorAll('[data-set]').forEach(b=>b.setAttribute('aria-checked', String(!!settings[b.dataset.set]))); }
+$('openSettings').onclick = ()=>{ renderSettings(); $('settings').classList.add('on'); };
+document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{ const k=b.dataset.set; settings[k]=!settings[k]; store.set('settings',settings); renderSettings(); });
+
+show('home');
+window.__bd = { get G(){ return G; }, get B(){ return B; }, get thinking(){ return thinking; }, get scoring(){ return scoring; }, newGame, openLesson, show, get rec(){ return rec; }, startScoring, endGame };
+})();
+</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});</script>
+</body>
+</html>

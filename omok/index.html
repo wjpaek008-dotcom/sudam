@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수담 오목</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3EAD7;--paper2:#EADFC6;--ink:#2A1E14;--sub:#6B5A48;--line:#D6C6A6;--card:#FBF6EA;
+  --wood1:#E2B970;--wood2:#D4A256;--wood3:#C48E44;--grid:#3B2A17;--seal:#A8322D;--seal-soft:#F3DCD6;--ok:#2F6B3A;
+  --serif:'Noto Serif KR','Nanum Myeongjo',serif;--shadow:0 10px 26px rgba(60,38,16,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;color:var(--ink);font-family:'Noto Sans KR',system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:var(--paper) radial-gradient(circle at 20% 10%,rgba(255,255,255,.5),transparent 60%);}
+button{font-family:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;min-height:100dvh}
+.screen{display:none;min-height:100dvh;padding:18px 16px 20px;flex-direction:column;gap:14px}
+.screen.on{display:flex}
+.row{display:flex;align-items:center}.between{justify-content:space-between}
+.title{font-family:var(--serif);font-weight:900;letter-spacing:-.5px}
+.muted{color:var(--sub)}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 0 rgba(120,90,50,.08)}
+.btn{height:54px;border-radius:14px;font-size:16px;font-weight:700;width:100%}
+.btn.ink{background:var(--ink);color:#F7EFDD}
+.btn.seal{background:var(--seal);color:#fff}
+.btn.plain{background:var(--card);border:1px solid var(--line);font-weight:500}
+.btn:active,.tool:active{transform:scale(.97)}
+.seal-mark{width:48px;height:48px;border-radius:10px;background:var(--seal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:22px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.card.menu{flex-direction:row;align-items:center;gap:14px;text-align:left;width:100%}
+.menu .ic{width:52px;height:52px;border-radius:14px;background:var(--paper2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.menu b{font-size:16px;font-family:var(--serif)}.menu small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+.grade{display:flex;align-items:center;gap:12px}
+.grade .g{font-family:var(--serif);font-weight:900;font-size:26px}
+.bar{height:6px;border-radius:3px;background:var(--paper2);overflow:hidden}.bar>i{display:block;height:100%;background:var(--seal)}
+.chips{display:flex;gap:6px}
+.chips button{flex:1 1 0;min-height:44px;border-radius:12px;background:var(--paper);border:1px solid var(--line);font-size:14px;color:var(--sub);padding:6px 4px;line-height:1.25}
+.chips button small{display:block;font-size:11px}
+.chips button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#F7EFDD;font-weight:700}
+.lbl{font-size:13px;color:var(--sub);font-weight:500}
+/* 바둑판 */
+.goban{position:relative;width:100%;aspect-ratio:1;border-radius:6px;
+  background:
+    repeating-linear-gradient(92deg,rgba(120,70,20,.07) 0 2px,transparent 2px 9px),
+    repeating-linear-gradient(88deg,rgba(90,50,10,.05) 0 1px,transparent 1px 23px),
+    linear-gradient(160deg,var(--wood1),var(--wood2) 55%,var(--wood3));
+  box-shadow:0 1px 0 #F5D9A3 inset,0 -3px 0 rgba(80,45,10,.25) inset,0 12px 24px rgba(60,35,10,.35);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.goban svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.goban .drop{animation:stoneDrop .38s cubic-bezier(.2,.9,.3,1.25) both;transform-box:fill-box;transform-origin:center}
+@keyframes stoneDrop{0%{transform:translateY(-.4px) scale(1.3);opacity:0}100%{transform:none;opacity:1}}
+.goban .gone{animation:stoneGone .55s ease-in .12s forwards;transform-box:fill-box;transform-origin:center}
+@keyframes stoneGone{to{opacity:0;transform:scale(.55)}}
+.goban .tg{animation:tg 1s ease-in-out infinite}
+@keyframes tg{50%{opacity:.18}}
+.gamebar{display:flex;gap:8px;align-items:stretch}
+.player{flex:1 1 0;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--line);min-width:0}
+.player.turn{border-color:var(--seal);box-shadow:0 0 0 1px var(--seal)}
+.player .st{width:22px;height:22px;border-radius:50%;flex-shrink:0}
+.st.b{background:radial-gradient(circle at 35% 30%,#6a6a6a,#111 60%)}
+.st.w{background:radial-gradient(circle at 35% 30%,#fff,#d9d4c7 70%);box-shadow:inset 0 0 0 1px #bfb8a8}
+.player b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player span{font-size:12px;color:var(--sub);white-space:nowrap}
+.status{min-height:22px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.think{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub)}
+.think .bar{width:90px}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tool{height:56px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px}
+.tool svg{width:20px;height:20px}
+.goban .wl{stroke-dasharray:20;stroke-dashoffset:20;animation:wl .6s ease-out .25s forwards}
+@keyframes wl{to{stroke-dashoffset:0}}
+.goban .ban{animation:banIn .25s ease-out both}
+@keyframes banIn{from{opacity:0}}
+.rulechip{font-size:11px;font-weight:700;color:var(--seal);background:var(--seal-soft);padding:2px 7px;border-radius:999px;white-space:nowrap}
+/* 교육 */
+.lesson-list{display:flex;flex-direction:column;gap:8px}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:left;width:100%}
+.lrow .no{width:30px;height:30px;border-radius:50%;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;flex-shrink:0}
+.lrow.done .no{background:var(--ok);color:#fff}
+.ltext{white-space:pre-line;font-size:15px;line-height:1.65}
+.feedback{padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.55}
+.feedback.good{background:#E3EEDF;color:#23502C}.feedback.bad{background:var(--seal-soft);color:#7D211C}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* 결과·기록 */
+.result-big{font-family:var(--serif);font-weight:900;font-size:34px;text-align:center}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.score .card{align-items:center;text-align:center;gap:4px}
+.score b{font-family:var(--serif);font-size:28px}
+.hist{display:flex;flex-direction:column;border-radius:16px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+.hist div{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);font-size:13px}
+.hist div:first-child{border-top:0}
+.tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0}
+.tag.win{background:#E3EEDF;color:#23502C}.tag.lose{background:var(--seal-soft);color:#7D211C}.tag.draw{background:var(--paper2);color:var(--sub)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:12px 6px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center}
+.stat span{display:block;font-size:12px;color:var(--sub)}.stat b{font-family:var(--serif);font-size:20px}
+/* 시트·알림 */
+.dim{position:fixed;inset:0;background:rgba(30,20,10,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.dim.on{display:flex}.dim.center{align-items:center;padding:20px}
+.sheet{width:100%;max-width:520px;background:var(--paper);border-radius:22px 22px 0 0;padding:20px 16px 28px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow);max-height:92dvh;overflow:auto}
+.modal{width:100%;max-width:360px;background:var(--paper);border-radius:20px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:10px;text-align:center;box-shadow:var(--shadow)}
+.opt{min-height:56px;padding:0 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%}
+.sw{width:46px;height:26px;border-radius:13px;background:var(--line);position:relative;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.opt[aria-checked=true] .sw{background:var(--ink)}.opt[aria-checked=true] .sw::after{transform:translateX(20px)}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-20px);background:var(--ink);color:#F7EFDD;padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.rules p,.rules li{font-size:14px;line-height:1.65}.rules h3{font-family:var(--serif);margin:8px 0 2px;font-size:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* PC: 판을 화면 높이에 맞춰 크게, 버튼은 오른쪽 */
+@media (min-width:900px) and (min-height:560px){
+  .app{max-width:none}
+  .screen:not(#game):not(#lesson){max-width:520px;margin:0 auto}
+  #game.on,#lesson.on{display:grid;grid-template-columns:auto 380px;grid-auto-rows:min-content;column-gap:32px;row-gap:12px;justify-content:center;align-content:center;min-height:100dvh;padding:24px}
+  #game > *,#lesson > *{grid-column:2}
+  #game > .goban,#lesson > .goban{grid-column:1;grid-row:1 / span 8;align-self:center}
+  #game > .goban{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  #lesson > .goban{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  .tool{height:62px;font-size:13px}
+}
+
+@media (min-width:1500px) and (min-height:800px){
+  #game.on,#lesson.on{grid-template-columns:auto 456px}
+  #game > :not(.goban),#lesson > :not(.goban){zoom:1.2}
+  #game > .goban,#lesson > .goban{width:min(calc((100dvh - 48px)), calc(100vw - 560px))}
+}
+</style>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icons/favicon.png"><link rel="apple-touch-icon" href="../icons/apple-180.png"><meta name="theme-color" content="#A8322D">
+</head>
+<body>
+<div class="app">
+
+<!-- 홈 -->
+<section class="screen on" id="home">
+  <div class="row between">
+    <div class="row" style="gap:12px"><div class="seal-mark" aria-hidden="true">五</div>
+      <div><div class="title" style="font-size:28px">수담 오목</div><div class="muted" style="font-size:13px">다섯 알을 먼저 잇는 사람이 이겨요</div></div></div>
+    <button class="icon-btn" id="openSettings" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+  </div>
+  <div class="card">
+    <div class="grade"><div><div class="lbl">내 기력</div><div class="g" id="myGrade">18급</div></div>
+      <div style="flex-grow:1"><div class="bar"><i id="gradeBar" style="width:0%"></i></div><div class="muted" style="font-size:12px;margin-top:6px" id="gradeTip">AI를 이기면 기력이 올라가요</div></div></div>
+  </div>
+  <button class="card" id="resume" hidden style="text-align:left;background:var(--ink);color:#F7EFDD;border-color:var(--ink)">
+    <div class="row between" style="width:100%"><span style="font-size:13px;opacity:.75">이어서 두기</span><span style="font-weight:700">계속 ▶</span></div>
+    <span id="rsInfo" style="font-family:var(--serif);font-size:17px;font-weight:700"></span>
+  </button>
+  <button class="card menu" id="goPlay"><div class="ic"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#3B2A17" stroke-width="1"><path d="M3 15h24M15 3v24"/></g><circle cx="7" cy="7" r="3.2" fill="#1b1b1b"/><circle cx="11" cy="11" r="3.2" fill="#1b1b1b"/><circle cx="15" cy="15" r="3.2" fill="#1b1b1b"/><circle cx="19" cy="19" r="3.2" fill="#1b1b1b"/><circle cx="23" cy="23" r="3.2" fill="#1b1b1b"/><circle cx="21" cy="9" r="3.2" fill="#f8f5ee" stroke="#b9b1a0"/></svg></div><div><b>AI와 대국</b><small>초급 · 중급 · 고급, 15줄 · 19줄</small></div></button>
+  <button class="card menu" id="goLearn"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h7a3 3 0 013 3v12a2 2 0 00-2-2H3z"/><path d="M21 5h-7a3 3 0 00-3 3v12a2 2 0 012-2h8z"/></svg></div><div><b>오목 배우기</b><small id="learnInfo">완전 처음이라면 여기부터</small></div></button>
+  <button class="card menu" id="goPvp"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div><div><b>둘이서 두기</b><small>한 기기로 번갈아 두기</small></div></button>
+  <button class="card menu" id="goOnline" hidden><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A8322D" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9M12 3c-2.5 2.7-3.8 5.7-3.8 9s1.3 6.3 3.8 9"/></svg></div><div><b>온라인 대전</b><small>방 만들기 · 번호로 들어가기 · 열린 방</small></div></button>
+  <div class="row" style="gap:8px"><button class="btn plain" id="goRecords">기록</button><button class="btn plain" id="goRules">규칙·기력 안내</button></div>
+</section>
+
+<!-- 대국 -->
+<section class="screen" id="game" style="gap:10px">
+  <div class="row between">
+    <button class="icon-btn" id="gHome" aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button>
+    <div class="title" id="gTitle" style="font-size:18px">AI 대국</div>
+    <div class="muted" id="gMove" style="font-size:13px;width:44px;text-align:right">0수</div>
+  </div>
+  <div class="nt-bar" id="netBar" hidden></div>
+  <div class="gamebar">
+    <div class="player" id="pB"><span class="st b"></span><div style="min-width:0"><b id="pBName">나</b><br><span id="pBSub">흑 · 먼저</span></div></div>
+    <div class="player" id="pW"><span class="st w"></span><div style="min-width:0"><b id="pWName">AI</b><br><span id="pWSub">백</span></div></div>
+  </div>
+  <div class="goban" id="goban"></div>
+  <div class="status"><span id="gStatus">흑 차례</span><span class="think" id="think" hidden><span>생각 중</span><span class="bar"><i id="thinkBar" style="width:0%"></i></span></span></div>
+  <div class="tools" id="playTools">
+    <button class="tool" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>무르기</button>
+    <button class="tool" id="hintBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>힌트</button>
+    <button class="tool" id="resignBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>기권</button>
+  </div>
+</section>
+
+<!-- 결과 -->
+<section class="screen" id="result">
+  <div class="row"><button class="icon-btn" data-home aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></div>
+  <div class="result-big" id="rTitle" style="margin-top:10px">흑 승</div>
+  <div class="muted" id="rSub" style="text-align:center;font-size:14px"></div>
+  <div class="card" id="rGrade" hidden style="align-items:center;text-align:center"></div>
+  <div class="goban" id="rBoard" style="width:78%;align-self:center"></div>
+  <div style="flex-grow:1"></div>
+  <button class="btn ink" id="rAgain">한 판 더</button>
+  <button class="btn plain" data-home>홈으로</button>
+</section>
+
+<!-- 배우기 목록 -->
+<section class="screen" id="learn">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">오목 배우기</span></div>
+  <p class="muted" style="margin:0;font-size:14px">완전 처음이어도 괜찮아요. 한 강씩 직접 돌을 놓으며 배워요.</p>
+  <div class="lesson-list" id="lessonList"></div>
+</section>
+
+<!-- 배우기 한 강 -->
+<section class="screen" id="lesson" style="gap:12px">
+  <div class="row between"><button class="icon-btn" id="lBack" aria-label="목록으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="title" id="lTitle" style="font-size:19px"></span><span class="muted" id="lNo" style="font-size:13px;width:44px;text-align:right"></span></div>
+  <div class="ltext" id="lText"></div>
+  <div class="goban" id="lBoard"></div>
+  <div class="feedback" id="lFeed" hidden></div>
+  <div class="row" style="gap:8px"><button class="btn plain" id="lRetry">다시 하기</button><button class="btn ink" id="lNext">다음 강</button></div>
+</section>
+
+<!-- 기록 -->
+<section class="screen" id="records">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">기록</span></div>
+  <div id="recBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<!-- 규칙·기력 -->
+<section class="screen" id="rules">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">규칙·기력 안내</span></div>
+  <div class="card rules">
+    <h3>기본 규칙</h3>
+    <ul><li>흑이 먼저, 한 알씩 번갈아 놓아요.</li><li>가로·세로·대각선으로 <b>딱 다섯 알</b>을 먼저 이으면 승리.</li><li>여섯 알 이상(장목)은 승리가 아니에요.</li><li>판이 다 차도록 승부가 안 나면 무승부예요.</li></ul>
+    <h3>삼삼(쌍삼) 금지</h3>
+    <ul><li>한 수로 <b>열린 셋이 두 줄 동시에</b> 생기는 자리는 둘 수 없어요.</li><li>열린 셋 = 한 알 더 놓으면 양쪽이 열린 넷이 되는 셋 (띈 셋 포함).</li><li>사삼(넷+셋)·사사(넷+넷)는 둘 수 있어요.</li><li>그 수로 다섯이 완성되면 삼삼이어도 둘 수 있어요 (승리).</li><li>대국 설정에서 <b>흑백 모두</b>(기본) 또는 <b>흑만</b> 금지를 고를 수 있어요. 흑만 금지는 먼저 두는 흑의 유리함을 줄이는 방식이에요.</li><li>금지 자리는 판에 빨간 ✕로 보여요 (설정에서 끌 수 있어요).</li></ul>
+    <h3>AI 단계와 기력</h3>
+    <ul><li><b>초급</b> — 18~10급. 눈앞의 모양만 보고, 가끔 막을 곳을 놓쳐요.</li><li><b>중급</b> — 9~3급. 셋·넷은 잘 막고, 연속 넷 승리를 노려요.</li><li><b>고급</b> — 2급~단. 여러 수 앞을 읽고, 상대의 연속 넷까지 미리 막아요.</li></ul>
+    <h3>내 기력이 오르는 방법</h3>
+    <ul><li>처음엔 18급에서 시작해요. AI를 이기면 1급씩 올라요.</li><li>단계마다 오를 수 있는 한계가 있어요: 초급 상대 10급까지, 중급 상대 3급까지, 고급 상대 4단까지.</li><li>내 기력보다 약한 단계에 지면 1급 내려가요.</li><li>무르기·힌트를 쓴 판은 이겨도 기력이 오르지 않아요.</li></ul>
+  </div>
+</section>
+</div>
+
+<!-- 대국 설정 -->
+<div class="dim" id="setup" role="dialog" aria-modal="true" aria-label="대국 설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">대국 설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <span class="lbl">AI 단계</span>
+    <div class="chips" id="sLevel"><button data-v="0">초급<small>18~10급</small></button><button data-v="1">중급<small>9~3급</small></button><button data-v="2">고급<small>2급~</small></button></div>
+    <span class="lbl">판</span>
+    <div class="chips" id="sSize"><button data-v="15">15줄<small>오목 정식</small></button><button data-v="19">19줄<small>바둑판</small></button></div>
+    <span class="lbl">내 돌</span>
+    <div class="chips" id="sColor"><button data-v="1">흑 (먼저)</button><button data-v="2">백</button><button data-v="0">무작위</button></div>
+    <span class="lbl">삼삼 금지</span>
+    <div class="chips" id="sBan"><button data-v="0">흑백 모두<small>기본</small></button><button data-v="1">흑만<small>흑 유리함 줄이기</small></button></div>
+    <button class="btn ink" id="startGame">대국 시작</button>
+  </div>
+</div>
+<!-- 둘이서 설정 -->
+<div class="dim" id="pvpSetup" role="dialog" aria-modal="true" aria-label="둘이서 두기">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">둘이서 두기</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <span class="lbl">판</span>
+    <div class="chips" id="pSize"><button data-v="15">15줄</button><button data-v="19">19줄</button></div>
+    <span class="lbl">삼삼 금지</span>
+    <div class="chips" id="pBan"><button data-v="0">흑백 모두</button><button data-v="1">흑만</button></div>
+    <button class="btn ink" id="startPvp">시작</button>
+  </div>
+</div>
+<!-- 설정 -->
+<div class="dim" id="settings" role="dialog" aria-modal="true" aria-label="설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <button class="opt" role="switch" data-set="sound"><span>돌 놓는 소리</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="coords"><span>좌표 표시</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="showBan"><span>금지 자리 표시<small style="display:block;font-size:12px;color:var(--sub)">삼삼 자리에 빨간 ✕</small></span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="confirm"><span>두 번 눌러 착수<small style="display:block;font-size:12px;color:var(--sub)">잘못 누르는 실수 방지 (폰 추천)</small></span><span class="sw"></span></button>
+  </div>
+</div>
+<!-- 확인 -->
+<div class="dim center" id="askModal" role="dialog" aria-modal="true">
+  <div class="modal"><span class="title" style="font-size:19px" id="askTitle"></span><span class="muted" id="askText" style="font-size:14px;margin-bottom:6px"></span>
+    <button class="btn ink" id="askYes">확인</button><button class="btn plain" data-close>취소</button></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../net.js"></script>
+<script>
+(function(root){
+'use strict';
+const BLACK = 1, WHITE = 2;
+const DIRS = [[1,0],[0,1],[1,1],[1,-1]];
+// ---------- 1줄 모양 표 (가운데 = 지금 놓는 돌, 양쪽 4칸) ----------
+const NONE=0, TWO=1, OPEN2=2, THREE=3, OPEN3=4, FOUR=5, OPEN4=6, FIVE=7, OVER=8;
+const P3 = [1,3,9,27,81,243,729,2187];
+const TABLE = new Uint8Array(6561).fill(255);
+function decode(code){ const a = new Array(9); let k = code; for (let i=0;i<8;i++){ const v = k%3; k=(k-v)/3; a[i<4?i:i+1] = v; } a[4] = 1; return a; }
+function encode(a){ let c = 0; for (let i=0;i<8;i++) c += a[i<4?i:i+1]*P3[i]; return c; }
+function classify(code){
+  if (TABLE[code]!==255) return TABLE[code];
+  const a = decode(code);
+  let l=4, r=4; while (l>0 && a[l-1]===1) l--; while (r<8 && a[r+1]===1) r++;
+  const len = r-l+1; let res;
+  if (len===5) res = FIVE; else if (len>5) res = OVER;
+  else {
+    let f=0, o3=false, t3=false, o2=false, t2=false;
+    for (let j=0;j<9;j++){ if (a[j]!==0) continue; a[j]=1; const s = classify(encode(a)); a[j]=0;
+      if (s===FIVE) f++; else if (s===OPEN4) o3=true; else if (s===FOUR) t3=true; else if (s===OPEN3) o2=true; else if (s===THREE) t2=true; }
+    res = f>=2 ? OPEN4 : f===1 ? FOUR : o3 ? OPEN3 : t3 ? THREE : o2 ? OPEN2 : t2 ? TWO : NONE;
+  }
+  TABLE[code] = res; return res;
+}
+for (let c=0;c<6561;c++) classify(c);
+
+function banFor(rules, col){ return !!rules && (rules.ban==='both' || (rules.ban==='black' && col===BLACK)); }
+
+// ---------- 정확한 판 규칙 ----------
+function runLen(c, n, p, col, dx, dy){ // p는 col 돌로 가정
+  const x0 = p%n, y0 = (p/n)|0; let k = 1, x, y;
+  x=x0+dx; y=y0+dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ k++; x+=dx; y+=dy; }
+  x=x0-dx; y=y0-dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ k++; x-=dx; y-=dy; }
+  return k;
+}
+function fiveLine(c, n, p, col){ // 정확히 다섯 (여섯 이상은 승리 아님) — 이긴 줄 돌 목록
+  const x0 = p%n, y0 = (p/n)|0;
+  for (const [dx,dy] of DIRS){ if (runLen(c,n,p,col,dx,dy)!==5) continue;
+    const L=[p]; let x=x0+dx,y=y0+dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ L.push(y*n+x); x+=dx; y+=dy; }
+    x=x0-dx; y=y0-dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ L.push(y*n+x); x-=dx; y-=dy; }
+    return L; }
+  return null;
+}
+function makesFive(c, n, p, col){ for (const [dx,dy] of DIRS) if (runLen(c,n,p,col,dx,dy)===5) return true; return false; }
+// p가 놓인 상태에서, 방향 d로 p를 포함한 '정확히 다섯'을 만드는 빈 점 수
+function fivePtsDir(c, n, p, col, dx, dy, alsoIn){
+  const x0 = p%n, y0 = (p/n)|0; let cnt = 0;
+  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; if (x<0||y<0||x>=n||y>=n) continue; const q=y*n+x; if (c[q]!==0) continue;
+    c[q]=col; if (runLen(c,n,q,col,dx,dy)===5 && inRun(c,n,q,col,dx,dy,p) && (alsoIn==null || inRun(c,n,q,col,dx,dy,alsoIn))) cnt++; c[q]=0; }
+  return cnt;
+}
+function inRun(c, n, q, col, dx, dy, t){ // t가 q를 지나는 연속 줄 안에 있나
+  const qx=q%n, qy=(q/n)|0, tx=t%n, ty=(t/n)|0;
+  let k; if (dx) k=(tx-qx)/dx; else k=(ty-qy)/dy;
+  if (!Number.isInteger(k) || qx+k*dx!==tx || qy+k*dy!==ty) return false;
+  const s = k>0?1:-1; for (let i=s;i!==k+s;i+=s){ const x=qx+i*dx, y=qy+i*dy; if (c[y*n+x]!==col) return false; } return true;
+}
+function isThreeDir(c, n, p, col, dx, dy, rules, depth){
+  const x0 = p%n, y0 = (p/n)|0;
+  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; if (x<0||y<0||x>=n||y>=n) continue; const q=y*n+x; if (c[q]!==0) continue;
+    c[q]=col;
+    let ok = runLen(c,n,q,col,dx,dy)<5 && fivePtsDir(c,n,q,col,dx,dy,p)>=2;
+    c[q]=0;
+    if (ok && depth>0 && isForbidden(c,n,q,col,rules,depth-1)) ok = false; // 그 자리가 또 금수면 진짜 열린 셋이 아님
+    if (ok) return true; }
+  return false;
+}
+// 삼삼(쌍삼) 금지: 한 수로 열린 셋이 두 줄 이상 동시에 생기면 금지. 다섯이 되는 수는 예외(승리).
+function isForbidden(c, n, p, col, rules, depth){
+  if (!banFor(rules, col) || c[p]!==0) return false;
+  if (depth==null) depth = 2;
+  c[p] = col;
+  if (makesFive(c,n,p,col)){ c[p]=0; return false; }
+  let threes = 0;
+  for (const [dx,dy] of DIRS){
+    if (fivePtsDir(c,n,p,col,dx,dy)>=1) continue; // 넷은 셋이 아님
+    if (isThreeDir(c,n,p,col,dx,dy,rules,depth)){ if (++threes>=2) break; }
+  }
+  c[p] = 0;
+  return threes>=2;
+}
+
+// ---------- 빠른 모양 읽기 (AI용) ----------
+function shapeAt(c, n, p, col, dx, dy){
+  const x0 = p%n, y0 = (p/n)|0; let code = 0, i = 0;
+  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; let v;
+    if (x<0||y<0||x>=n||y>=n) v=2; else { const w=c[y*n+x]; v = w===0?0 : w===col?1 : 2; }
+    code += v*P3[i++]; }
+  return TABLE[code];
+}
+const SFIVE = 1e7, SWIN = 1e5;
+// 한 점에 col이 놓을 때 가치. -1이면 금수(둘 수 없음)
+function pointScore(c, n, p, col, rules){
+  let f4=0,o4=0,o3=0,t3=0,o2=0,t2=0;
+  for (const [dx,dy] of DIRS){ switch (shapeAt(c,n,p,col,dx,dy)){
+    case FIVE: return SFIVE; case OPEN4: o4++; break; case FOUR: f4++; break; case OPEN3: o3++; break; case THREE: t3++; break; case OPEN2: o2++; break; case TWO: t2++; break; } }
+  if (o3>=2 && banFor(rules,col) && isForbidden(c,n,p,col,rules,1)) return -1;
+  let s = 0;
+  if (o4 || f4>=2) s = SWIN; else if (f4 && o3) s = 30000; else if (o3>=2) s = 12000;
+  return s + f4*1600 + o4*1600 + o3*1300 + t3*220 + o2*160 + t2*35;
+}
+
+// ---------- 판 상태 ----------
+function Game(n){ this.n=n; this.c=new Int8Array(n*n); this.moves=[]; this.toMove=BLACK; this.winner=0; this.winLine=null; this.last=-1; }
+Game.prototype.play = function(p){
+  const col = this.toMove; this.c[p]=col; this.moves.push(p); this.last=p;
+  const L = fiveLine(this.c, this.n, p, col);
+  if (L){ this.winner=col; this.winLine=L; } else if (this.moves.length===this.n*this.n) this.winner=3;
+  this.toMove = 3-col;
+};
+Game.prototype.pt = function(x,y){ return y*this.n+x; };
+Game.prototype.xy = function(p){ return [p%this.n, (p/this.n)|0]; };
+
+// ---------- 후보 ----------
+function gen(c, n, R){
+  const N=n*n, mark=new Uint8Array(N), out=[]; let any=false;
+  for (let p=0;p<N;p++){ if (!c[p]) continue; any=true; const x=p%n, y=(p/n)|0;
+    for (let dy=-R;dy<=R;dy++) for (let dx=-R;dx<=R;dx++){ const X=x+dx, Y=y+dy; if (X<0||Y<0||X>=n||Y>=n) continue; const q=Y*n+X; if (!c[q] && !mark[q]){ mark[q]=1; out.push(q); } } }
+  if (!any) out.push(((n>>1)*n)+(n>>1));
+  return out;
+}
+function scored(c, n, col, rules){
+  const pts = gen(c, n, 2), res = [];
+  for (const p of pts){ const a = pointScore(c,n,p,col,rules); const d = pointScore(c,n,p,3-col,rules); res.push({ p, a, d: d<0?0:d }); }
+  return res;
+}
+const WIN = 1e9;
+function staticEval(list){
+  let a1=0,a2=0,d1=0,d2=0;
+  for (const x of list){ if (x.a>a1){ a2=a1; a1=x.a; } else if (x.a>a2) a2=x.a; if (x.d>d1){ d2=d1; d1=x.d; } else if (x.d>d2) d2=x.d; }
+  return a1 + a2*0.35 - d1*0.75 - d2*0.25;
+}
+function search(c, n, col, depth, alpha, beta, ctx, ply){
+  ctx.nodes++; if ((ctx.nodes & 511)===0 && Date.now() > ctx.deadline) ctx.stop = true;
+  if (ctx.stop) return 0;
+  const all = scored(c, n, col, ctx.rules);
+  if (!all.length) return 0;
+  let list = [];
+  for (const x of all) if (x.a>=SFIVE) return WIN - ply;
+  const opp5 = all.filter(x=>x.d>=SFIVE);
+  if (opp5.length){ if (opp5.length>=2) return -(WIN - ply - 1); list = opp5.filter(x=>x.a>=0); if (!list.length) return -(WIN - ply - 1); }
+  else {
+    for (const x of all) if (x.a>=SWIN) return WIN - ply - 2;
+    const legal = all.filter(x=>x.a>=0);
+    if (all.some(x=>x.d>=SWIN)) list = legal.filter(x=>x.d>=1300 || x.a>=1600);
+    else list = legal;
+    if (depth<=0) return staticEval(legal);
+  }
+  if (!list.length) return -(WIN - ply - 3);
+  list.sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85));
+  const K = ctx.width[Math.min(ply, ctx.width.length-1)];
+  if (list.length>K) list.length = K;
+  let best = -Infinity;
+  for (const x of list){
+    c[x.p]=col; const v = -search(c, n, 3-col, depth-1, -beta, -alpha, ctx, ply+1); c[x.p]=0;
+    if (ctx.stop) return best===-Infinity ? 0 : best;
+    if (v>best) best=v; if (v>alpha) alpha=v; if (alpha>=beta) break;
+  }
+  return best;
+}
+// 연속 4로 이기기 (VCF)
+function fourMoves(c, n, col, rules){
+  const out = [];
+  for (const p of gen(c, n, 1)){ let four = false, five = false;
+    for (const [dx,dy] of DIRS){ const s = shapeAt(c,n,p,col,dx,dy); if (s===FIVE) five=true; else if (s===FOUR||s===OPEN4) four=true; }
+    if (five) return [{p, five:true}];
+    if (four && !isForbidden(c,n,p,col,rules,1)) out.push({p}); }
+  return out;
+}
+function vcf(c, n, col, depth, ctx){
+  if (depth<=0 || ctx.vnodes++ > ctx.vmax) return -1;
+  const fm = fourMoves(c, n, col, ctx.rules);
+  if (fm.length && fm[0].five) return fm[0].p;
+  // 상대가 이미 다섯 자리를 갖고 있으면 연속 4가 안 됨
+  for (const p of gen(c,n,1)) if (shapeAt(c,n,p,3-col,1,0)===FIVE||shapeAt(c,n,p,3-col,0,1)===FIVE||shapeAt(c,n,p,3-col,1,1)===FIVE||shapeAt(c,n,p,3-col,1,-1)===FIVE){ if (makesFive(c,n,p,3-col)) return -1; }
+  for (const {p} of fm){
+    c[p]=col;
+    const blocks = [];
+    for (const q of gen(c,n,1)) if (!c[q]){ c[q]=col; const f = runLen(c,n,q,col,1,0)===5||runLen(c,n,q,col,0,1)===5||runLen(c,n,q,col,1,1)===5||runLen(c,n,q,col,1,-1)===5; c[q]=0; if (f) blocks.push(q); }
+    let win = false;
+    if (blocks.length>=2) win = true;
+    else if (blocks.length===1){ const b = blocks[0];
+      if (isForbidden(c,n,b,3-col,ctx.rules,2)) win = true; // 막을 자리가 상대 금수
+      else { c[b]=3-col; if (!makesFive(c,n,b,3-col)) win = vcf(c,n,col,depth-1,ctx)>=0; c[b]=0; } }
+    c[p]=0;
+    if (win) return p;
+  }
+  return -1;
+}
+// ---------- AI 결정 ----------
+const LEVELS = [
+  { name:'초급', depth:0, vcf:0, noise:0.55, miss:0.22, time:300 },
+  { name:'중급', depth:3, vcf:8, noise:0.06, miss:0, time:1200, width:[10,8,8,6] },
+  { name:'고급', depth:9, vcf:16, noise:0, miss:0, time:2200, width:[12,10,9,8,7,6,6,5,5], oppVcf:true }
+];
+function decide(cells, n, col, level, rules, seed){
+  const c = Int8Array.from(cells), L = LEVELS[level], rnd = Math.random;
+  const stones = c.reduce((s,v)=>s+(v?1:0),0), ctr = (n>>1)*n+(n>>1);
+  if (!stones) return { move: ctr, cands:[ctr] };
+  const all = scored(c, n, col, rules).filter(x=>x.a>=0);
+  if (!all.length) return { move: -1, cands:[] };
+  const cands = all.slice().sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0,6).map(x=>x.p);
+  if (stones===1){ const o = c.findIndex(v=>v); const x=o%n, y=(o/n)|0; const ops=[];
+    for (const [dx,dy] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[0,1],[-1,0],[0,-1]]){ const X=x+dx,Y=y+dy; if (X>=0&&Y>=0&&X<n&&Y<n) ops.push(Y*n+X); }
+    return { move: ops[(rnd()*Math.min(ops.length, 4))|0], cands }; }
+  const five = all.find(x=>x.a>=SFIVE); if (five) return { move: five.p, cands };
+  const opp5 = all.filter(x=>x.d>=SFIVE);
+  if (opp5.length && !(L.miss && rnd()<L.miss*0.35)) return { move: opp5[0].p, cands };
+  const w4 = all.filter(x=>x.a>=SWIN).sort((u,v)=>v.a-u.a); if (w4.length && !opp5.length && !(L.miss && rnd()<L.miss)) return { move: w4[0].p, cands };
+  const ctx = { rules, nodes:0, vnodes:0, vmax: 4000+L.vcf*1500, deadline: Date.now()+L.time, stop:false, width: L.width||[10] };
+  if (L.vcf && !opp5.length){ const v = vcf(c, n, col, L.vcf, ctx); if (v>=0) return { move: v, cands }; }
+  if (!L.depth){ // 초급: 눈앞의 모양만 보고 둠 (가끔 막을 곳을 놓침)
+    const careless = rnd() < L.miss;
+    const pool = all.map(x=>({ p:x.p, s:(x.a + x.d*(careless?0.25:0.8)) * (1 + (rnd()-0.5)*2*L.noise) + rnd()*60 }));
+    pool.sort((u,v)=>v.s-u.s); return { move: pool[0].p, cands };
+  }
+  let list = all;
+  if (opp5.length) list = opp5;
+  else if (all.some(x=>x.d>=SWIN)) list = all.filter(x=>x.d>=1300 || x.a>=1600);
+  list = list.slice().sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0, ctx.width[0]);
+  // 고급: 상대에게 연속 4 승리를 허용하는 수 거르기
+  if (L.oppVcf && list.length>1){
+    const safe = list.filter(x=>{ c[x.p]=col; const ctx2 = { rules, vnodes:0, vmax:2500 }; const r = vcf(c, n, 3-col, 12, ctx2); c[x.p]=0; return r<0; });
+    if (safe.length) list = safe;
+  }
+  let bestMove = list[0].p, bestScores = null;
+  for (let d=1; d<=L.depth; d++){
+    const sc = []; let alpha=-Infinity; ctx.stop=false;
+    for (const x of list){ c[x.p]=col; const v = -search(c, n, 3-col, d-1, -Infinity, -alpha, ctx, 1); c[x.p]=0; if (ctx.stop) break; sc.push({p:x.p, v}); if (v>alpha) alpha=v; }
+    if (ctx.stop && sc.length < list.length) break;
+    sc.sort((u,v)=>v.v-u.v); bestScores = sc; bestMove = sc[0].p;
+    list = sc.map(s=>list.find(x=>x.p===s.p));
+    ctx.reached = d; if (sc[0].v >= WIN-100 || Date.now() > ctx.deadline) break;
+  }
+  if (L.noise && bestScores && bestScores.length>1 && bestScores[0].v < WIN-100){
+    const top = bestScores[0].v, ok = bestScores.filter(s=>s.v >= top - Math.abs(top)*L.noise - 200 && s.v > -WIN+100);
+    if (ok.length) bestMove = ok[(rnd()*Math.min(ok.length,3))|0].p;
+  }
+  return { move: bestMove, cands, depth: ctx.reached||0 };
+}
+// 고민 동작용: 빠른 유력 후보
+function quickCands(cells, n, col, rules, k){
+  const c = Int8Array.from(cells);
+  return scored(c, n, col, rules).filter(x=>x.a>=0).sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0,k||5).map(x=>x.p);
+}
+function forbiddenPoints(cells, n, col, rules){
+  if (!banFor(rules, col)) return [];
+  const c = Int8Array.from(cells), out = [];
+  for (const p of gen(c, n, 2)){ let o3=0; for (const [dx,dy] of DIRS){ const s = shapeAt(c,n,p,col,dx,dy); if (s===OPEN3) o3++; } if (o3>=2 && isForbidden(c,n,p,col,rules,2)) out.push(p); }
+  return out;
+}
+root.OM = { BLACK, WHITE, Game, isForbidden, makesFive, fiveLine, decide, quickCands, forbiddenPoints, pointScore, vcf, LEVELS, shapeAt, SH:{NONE,TWO,OPEN2,THREE,OPEN3,FOUR,OPEN4,FIVE,OVER}, DIRS, banFor };
+})(typeof self!=='undefined' ? self : this);
+(function(root){
+const OM = root.OM, { makesFive, isForbidden } = OM;
+function genAll(c,n){ const o=[]; for (let p=0;p<n*n;p++) if(!c[p]) o.push(p); return o; }
+function fivePoints(c,n,col,rules){ const o=[]; for (const p of genAll(c,n)){ c[p]=col; const f=makesFive(c,n,p,col); c[p]=0; if (f) o.push(p); } return o; }
+function forcedWin(c,n,col,plies,rules){
+  if (plies<=0) return false;
+  const pts = genAll(c,n);
+  for (const p of pts){ c[p]=col; const f=makesFive(c,n,p,col); c[p]=0; if (f) return true; }
+  for (const p of pts){ if (isForbidden(c,n,p,col,rules)) continue; c[p]=col; const ok = oppLoses(c,n,3-col,plies-1,rules); c[p]=0; if (ok) return true; }
+  return false;
+}
+function oppLoses(c,n,opp,plies,rules){
+  const col = 3-opp;
+  if (fivePoints(c,n,opp,rules).some(p=>!isForbidden(c,n,p,opp,rules))) return false;
+  const fp = fivePoints(c,n,col,rules);
+  if (fp.length>=2) return true;
+  if (fp.length===1 && isForbidden(c,n,fp[0],opp,rules)) return true;
+  if (plies<=0) return false;
+  const replies = fp.length===1 ? fp : genAll(c,n);
+  for (const q of replies){ if (isForbidden(c,n,q,opp,rules)) continue; c[q]=opp; const w=forcedWin(c,n,col,plies,rules); c[q]=0; if (!w) return false; }
+  return true;
+}
+function oppOpen4(c,n,opp,rules){ // 상대가 다음 수에 다섯 또는 막을 수 없는 넷을 만들 수 있나
+  for (const p of genAll(c,n)){ if (isForbidden(c,n,p,opp,rules)) continue; c[p]=opp; const f = makesFive(c,n,p,opp) || fivePoints(c,n,opp,rules).length>=2; c[p]=0; if (f) return true; }
+  return false;
+}
+// 교육 정답 판정 (p에 흑을 놓은 뒤)
+function lessonGoal(cells,n,p,goal,rules){
+  const c = Int8Array.from(cells), col = 1;
+  if (c[p]) return { ok:false, why:'taken' };
+  if (goal==='forbidden') return { ok: isForbidden(c,n,p,col,rules) };
+  if (isForbidden(c,n,p,col,rules)) return { ok:false, why:'forbidden' };
+  c[p]=col;
+  const five = makesFive(c,n,p,col);
+  let over = false; for (const [dx,dy] of OM.DIRS){ let k=1,x=p%n+dx,y=((p/n)|0)+dy; while(x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){k++;x+=dx;y+=dy;} x=p%n-dx;y=((p/n)|0)-dy; while(x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){k++;x-=dx;y-=dy;} if(k>5) over=true; }
+  if (goal==='five') return { ok: five, why: over?'over':'' };
+  if (goal==='block') return { ok: fivePoints(c,n,2,rules).length===0 };
+  if (goal==='open4') return { ok: five || fivePoints(c,n,col,rules).length>=2 };
+  if (goal==='stop3') return { ok: !oppOpen4(c,n,2,rules) };
+  if (goal==='win1') return { ok: five || oppLoses(c,n,2,0,rules) };
+  if (goal==='win2') return { ok: five || oppLoses(c,n,2,1,rules) };
+  return { ok:false };
+}
+OM.lessonGoal = lessonGoal; OM.fivePoints = fivePoints; OM.forcedWin = forcedWin;
+})(typeof self!=='undefined' ? self : this);
+
+</script>
+<script>
+window.OM_SRC = "(function(root){\n'use strict';\nconst BLACK = 1, WHITE = 2;\nconst DIRS = [[1,0],[0,1],[1,1],[1,-1]];\n// ---------- 1\uc904 \ubaa8\uc591 \ud45c (\uac00\uc6b4\ub370 = \uc9c0\uae08 \ub193\ub294 \ub3cc, \uc591\ucabd 4\uce78) ----------\nconst NONE=0, TWO=1, OPEN2=2, THREE=3, OPEN3=4, FOUR=5, OPEN4=6, FIVE=7, OVER=8;\nconst P3 = [1,3,9,27,81,243,729,2187];\nconst TABLE = new Uint8Array(6561).fill(255);\nfunction decode(code){ const a = new Array(9); let k = code; for (let i=0;i<8;i++){ const v = k%3; k=(k-v)/3; a[i<4?i:i+1] = v; } a[4] = 1; return a; }\nfunction encode(a){ let c = 0; for (let i=0;i<8;i++) c += a[i<4?i:i+1]*P3[i]; return c; }\nfunction classify(code){\n  if (TABLE[code]!==255) return TABLE[code];\n  const a = decode(code);\n  let l=4, r=4; while (l>0 && a[l-1]===1) l--; while (r<8 && a[r+1]===1) r++;\n  const len = r-l+1; let res;\n  if (len===5) res = FIVE; else if (len>5) res = OVER;\n  else {\n    let f=0, o3=false, t3=false, o2=false, t2=false;\n    for (let j=0;j<9;j++){ if (a[j]!==0) continue; a[j]=1; const s = classify(encode(a)); a[j]=0;\n      if (s===FIVE) f++; else if (s===OPEN4) o3=true; else if (s===FOUR) t3=true; else if (s===OPEN3) o2=true; else if (s===THREE) t2=true; }\n    res = f>=2 ? OPEN4 : f===1 ? FOUR : o3 ? OPEN3 : t3 ? THREE : o2 ? OPEN2 : t2 ? TWO : NONE;\n  }\n  TABLE[code] = res; return res;\n}\nfor (let c=0;c<6561;c++) classify(c);\n\nfunction banFor(rules, col){ return !!rules && (rules.ban==='both' || (rules.ban==='black' && col===BLACK)); }\n\n// ---------- \uc815\ud655\ud55c \ud310 \uaddc\uce59 ----------\nfunction runLen(c, n, p, col, dx, dy){ // p\ub294 col \ub3cc\ub85c \uac00\uc815\n  const x0 = p%n, y0 = (p/n)|0; let k = 1, x, y;\n  x=x0+dx; y=y0+dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ k++; x+=dx; y+=dy; }\n  x=x0-dx; y=y0-dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ k++; x-=dx; y-=dy; }\n  return k;\n}\nfunction fiveLine(c, n, p, col){ // \uc815\ud655\ud788 \ub2e4\uc12f (\uc5ec\uc12f \uc774\uc0c1\uc740 \uc2b9\ub9ac \uc544\ub2d8) \u2014 \uc774\uae34 \uc904 \ub3cc \ubaa9\ub85d\n  const x0 = p%n, y0 = (p/n)|0;\n  for (const [dx,dy] of DIRS){ if (runLen(c,n,p,col,dx,dy)!==5) continue;\n    const L=[p]; let x=x0+dx,y=y0+dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ L.push(y*n+x); x+=dx; y+=dy; }\n    x=x0-dx; y=y0-dy; while (x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){ L.push(y*n+x); x-=dx; y-=dy; }\n    return L; }\n  return null;\n}\nfunction makesFive(c, n, p, col){ for (const [dx,dy] of DIRS) if (runLen(c,n,p,col,dx,dy)===5) return true; return false; }\n// p\uac00 \ub193\uc778 \uc0c1\ud0dc\uc5d0\uc11c, \ubc29\ud5a5 d\ub85c p\ub97c \ud3ec\ud568\ud55c '\uc815\ud655\ud788 \ub2e4\uc12f'\uc744 \ub9cc\ub4dc\ub294 \ube48 \uc810 \uc218\nfunction fivePtsDir(c, n, p, col, dx, dy, alsoIn){\n  const x0 = p%n, y0 = (p/n)|0; let cnt = 0;\n  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; if (x<0||y<0||x>=n||y>=n) continue; const q=y*n+x; if (c[q]!==0) continue;\n    c[q]=col; if (runLen(c,n,q,col,dx,dy)===5 && inRun(c,n,q,col,dx,dy,p) && (alsoIn==null || inRun(c,n,q,col,dx,dy,alsoIn))) cnt++; c[q]=0; }\n  return cnt;\n}\nfunction inRun(c, n, q, col, dx, dy, t){ // t\uac00 q\ub97c \uc9c0\ub098\ub294 \uc5f0\uc18d \uc904 \uc548\uc5d0 \uc788\ub098\n  const qx=q%n, qy=(q/n)|0, tx=t%n, ty=(t/n)|0;\n  let k; if (dx) k=(tx-qx)/dx; else k=(ty-qy)/dy;\n  if (!Number.isInteger(k) || qx+k*dx!==tx || qy+k*dy!==ty) return false;\n  const s = k>0?1:-1; for (let i=s;i!==k+s;i+=s){ const x=qx+i*dx, y=qy+i*dy; if (c[y*n+x]!==col) return false; } return true;\n}\nfunction isThreeDir(c, n, p, col, dx, dy, rules, depth){\n  const x0 = p%n, y0 = (p/n)|0;\n  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; if (x<0||y<0||x>=n||y>=n) continue; const q=y*n+x; if (c[q]!==0) continue;\n    c[q]=col;\n    let ok = runLen(c,n,q,col,dx,dy)<5 && fivePtsDir(c,n,q,col,dx,dy,p)>=2;\n    c[q]=0;\n    if (ok && depth>0 && isForbidden(c,n,q,col,rules,depth-1)) ok = false; // \uadf8 \uc790\ub9ac\uac00 \ub610 \uae08\uc218\uba74 \uc9c4\uc9dc \uc5f4\ub9b0 \uc14b\uc774 \uc544\ub2d8\n    if (ok) return true; }\n  return false;\n}\n// \uc0bc\uc0bc(\uc30d\uc0bc) \uae08\uc9c0: \ud55c \uc218\ub85c \uc5f4\ub9b0 \uc14b\uc774 \ub450 \uc904 \uc774\uc0c1 \ub3d9\uc2dc\uc5d0 \uc0dd\uae30\uba74 \uae08\uc9c0. \ub2e4\uc12f\uc774 \ub418\ub294 \uc218\ub294 \uc608\uc678(\uc2b9\ub9ac).\nfunction isForbidden(c, n, p, col, rules, depth){\n  if (!banFor(rules, col) || c[p]!==0) return false;\n  if (depth==null) depth = 2;\n  c[p] = col;\n  if (makesFive(c,n,p,col)){ c[p]=0; return false; }\n  let threes = 0;\n  for (const [dx,dy] of DIRS){\n    if (fivePtsDir(c,n,p,col,dx,dy)>=1) continue; // \ub137\uc740 \uc14b\uc774 \uc544\ub2d8\n    if (isThreeDir(c,n,p,col,dx,dy,rules,depth)){ if (++threes>=2) break; }\n  }\n  c[p] = 0;\n  return threes>=2;\n}\n\n// ---------- \ube60\ub978 \ubaa8\uc591 \uc77d\uae30 (AI\uc6a9) ----------\nfunction shapeAt(c, n, p, col, dx, dy){\n  const x0 = p%n, y0 = (p/n)|0; let code = 0, i = 0;\n  for (let k=-4;k<=4;k++){ if (!k) continue; const x=x0+k*dx, y=y0+k*dy; let v;\n    if (x<0||y<0||x>=n||y>=n) v=2; else { const w=c[y*n+x]; v = w===0?0 : w===col?1 : 2; }\n    code += v*P3[i++]; }\n  return TABLE[code];\n}\nconst SFIVE = 1e7, SWIN = 1e5;\n// \ud55c \uc810\uc5d0 col\uc774 \ub193\uc744 \ub54c \uac00\uce58. -1\uc774\uba74 \uae08\uc218(\ub458 \uc218 \uc5c6\uc74c)\nfunction pointScore(c, n, p, col, rules){\n  let f4=0,o4=0,o3=0,t3=0,o2=0,t2=0;\n  for (const [dx,dy] of DIRS){ switch (shapeAt(c,n,p,col,dx,dy)){\n    case FIVE: return SFIVE; case OPEN4: o4++; break; case FOUR: f4++; break; case OPEN3: o3++; break; case THREE: t3++; break; case OPEN2: o2++; break; case TWO: t2++; break; } }\n  if (o3>=2 && banFor(rules,col) && isForbidden(c,n,p,col,rules,1)) return -1;\n  let s = 0;\n  if (o4 || f4>=2) s = SWIN; else if (f4 && o3) s = 30000; else if (o3>=2) s = 12000;\n  return s + f4*1600 + o4*1600 + o3*1300 + t3*220 + o2*160 + t2*35;\n}\n\n// ---------- \ud310 \uc0c1\ud0dc ----------\nfunction Game(n){ this.n=n; this.c=new Int8Array(n*n); this.moves=[]; this.toMove=BLACK; this.winner=0; this.winLine=null; this.last=-1; }\nGame.prototype.play = function(p){\n  const col = this.toMove; this.c[p]=col; this.moves.push(p); this.last=p;\n  const L = fiveLine(this.c, this.n, p, col);\n  if (L){ this.winner=col; this.winLine=L; } else if (this.moves.length===this.n*this.n) this.winner=3;\n  this.toMove = 3-col;\n};\nGame.prototype.pt = function(x,y){ return y*this.n+x; };\nGame.prototype.xy = function(p){ return [p%this.n, (p/this.n)|0]; };\n\n// ---------- \ud6c4\ubcf4 ----------\nfunction gen(c, n, R){\n  const N=n*n, mark=new Uint8Array(N), out=[]; let any=false;\n  for (let p=0;p<N;p++){ if (!c[p]) continue; any=true; const x=p%n, y=(p/n)|0;\n    for (let dy=-R;dy<=R;dy++) for (let dx=-R;dx<=R;dx++){ const X=x+dx, Y=y+dy; if (X<0||Y<0||X>=n||Y>=n) continue; const q=Y*n+X; if (!c[q] && !mark[q]){ mark[q]=1; out.push(q); } } }\n  if (!any) out.push(((n>>1)*n)+(n>>1));\n  return out;\n}\nfunction scored(c, n, col, rules){\n  const pts = gen(c, n, 2), res = [];\n  for (const p of pts){ const a = pointScore(c,n,p,col,rules); const d = pointScore(c,n,p,3-col,rules); res.push({ p, a, d: d<0?0:d }); }\n  return res;\n}\nconst WIN = 1e9;\nfunction staticEval(list){\n  let a1=0,a2=0,d1=0,d2=0;\n  for (const x of list){ if (x.a>a1){ a2=a1; a1=x.a; } else if (x.a>a2) a2=x.a; if (x.d>d1){ d2=d1; d1=x.d; } else if (x.d>d2) d2=x.d; }\n  return a1 + a2*0.35 - d1*0.75 - d2*0.25;\n}\nfunction search(c, n, col, depth, alpha, beta, ctx, ply){\n  ctx.nodes++; if ((ctx.nodes & 511)===0 && Date.now() > ctx.deadline) ctx.stop = true;\n  if (ctx.stop) return 0;\n  const all = scored(c, n, col, ctx.rules);\n  if (!all.length) return 0;\n  let list = [];\n  for (const x of all) if (x.a>=SFIVE) return WIN - ply;\n  const opp5 = all.filter(x=>x.d>=SFIVE);\n  if (opp5.length){ if (opp5.length>=2) return -(WIN - ply - 1); list = opp5.filter(x=>x.a>=0); if (!list.length) return -(WIN - ply - 1); }\n  else {\n    for (const x of all) if (x.a>=SWIN) return WIN - ply - 2;\n    const legal = all.filter(x=>x.a>=0);\n    if (all.some(x=>x.d>=SWIN)) list = legal.filter(x=>x.d>=1300 || x.a>=1600);\n    else list = legal;\n    if (depth<=0) return staticEval(legal);\n  }\n  if (!list.length) return -(WIN - ply - 3);\n  list.sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85));\n  const K = ctx.width[Math.min(ply, ctx.width.length-1)];\n  if (list.length>K) list.length = K;\n  let best = -Infinity;\n  for (const x of list){\n    c[x.p]=col; const v = -search(c, n, 3-col, depth-1, -beta, -alpha, ctx, ply+1); c[x.p]=0;\n    if (ctx.stop) return best===-Infinity ? 0 : best;\n    if (v>best) best=v; if (v>alpha) alpha=v; if (alpha>=beta) break;\n  }\n  return best;\n}\n// \uc5f0\uc18d 4\ub85c \uc774\uae30\uae30 (VCF)\nfunction fourMoves(c, n, col, rules){\n  const out = [];\n  for (const p of gen(c, n, 1)){ let four = false, five = false;\n    for (const [dx,dy] of DIRS){ const s = shapeAt(c,n,p,col,dx,dy); if (s===FIVE) five=true; else if (s===FOUR||s===OPEN4) four=true; }\n    if (five) return [{p, five:true}];\n    if (four && !isForbidden(c,n,p,col,rules,1)) out.push({p}); }\n  return out;\n}\nfunction vcf(c, n, col, depth, ctx){\n  if (depth<=0 || ctx.vnodes++ > ctx.vmax) return -1;\n  const fm = fourMoves(c, n, col, ctx.rules);\n  if (fm.length && fm[0].five) return fm[0].p;\n  // \uc0c1\ub300\uac00 \uc774\ubbf8 \ub2e4\uc12f \uc790\ub9ac\ub97c \uac16\uace0 \uc788\uc73c\uba74 \uc5f0\uc18d 4\uac00 \uc548 \ub428\n  for (const p of gen(c,n,1)) if (shapeAt(c,n,p,3-col,1,0)===FIVE||shapeAt(c,n,p,3-col,0,1)===FIVE||shapeAt(c,n,p,3-col,1,1)===FIVE||shapeAt(c,n,p,3-col,1,-1)===FIVE){ if (makesFive(c,n,p,3-col)) return -1; }\n  for (const {p} of fm){\n    c[p]=col;\n    const blocks = [];\n    for (const q of gen(c,n,1)) if (!c[q]){ c[q]=col; const f = runLen(c,n,q,col,1,0)===5||runLen(c,n,q,col,0,1)===5||runLen(c,n,q,col,1,1)===5||runLen(c,n,q,col,1,-1)===5; c[q]=0; if (f) blocks.push(q); }\n    let win = false;\n    if (blocks.length>=2) win = true;\n    else if (blocks.length===1){ const b = blocks[0];\n      if (isForbidden(c,n,b,3-col,ctx.rules,2)) win = true; // \ub9c9\uc744 \uc790\ub9ac\uac00 \uc0c1\ub300 \uae08\uc218\n      else { c[b]=3-col; if (!makesFive(c,n,b,3-col)) win = vcf(c,n,col,depth-1,ctx)>=0; c[b]=0; } }\n    c[p]=0;\n    if (win) return p;\n  }\n  return -1;\n}\n// ---------- AI \uacb0\uc815 ----------\nconst LEVELS = [\n  { name:'\ucd08\uae09', depth:0, vcf:0, noise:0.55, miss:0.22, time:300 },\n  { name:'\uc911\uae09', depth:3, vcf:8, noise:0.06, miss:0, time:1200, width:[10,8,8,6] },\n  { name:'\uace0\uae09', depth:9, vcf:16, noise:0, miss:0, time:2200, width:[12,10,9,8,7,6,6,5,5], oppVcf:true }\n];\nfunction decide(cells, n, col, level, rules, seed){\n  const c = Int8Array.from(cells), L = LEVELS[level], rnd = Math.random;\n  const stones = c.reduce((s,v)=>s+(v?1:0),0), ctr = (n>>1)*n+(n>>1);\n  if (!stones) return { move: ctr, cands:[ctr] };\n  const all = scored(c, n, col, rules).filter(x=>x.a>=0);\n  if (!all.length) return { move: -1, cands:[] };\n  const cands = all.slice().sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0,6).map(x=>x.p);\n  if (stones===1){ const o = c.findIndex(v=>v); const x=o%n, y=(o/n)|0; const ops=[];\n    for (const [dx,dy] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[0,1],[-1,0],[0,-1]]){ const X=x+dx,Y=y+dy; if (X>=0&&Y>=0&&X<n&&Y<n) ops.push(Y*n+X); }\n    return { move: ops[(rnd()*Math.min(ops.length, 4))|0], cands }; }\n  const five = all.find(x=>x.a>=SFIVE); if (five) return { move: five.p, cands };\n  const opp5 = all.filter(x=>x.d>=SFIVE);\n  if (opp5.length && !(L.miss && rnd()<L.miss*0.35)) return { move: opp5[0].p, cands };\n  const w4 = all.filter(x=>x.a>=SWIN).sort((u,v)=>v.a-u.a); if (w4.length && !opp5.length && !(L.miss && rnd()<L.miss)) return { move: w4[0].p, cands };\n  const ctx = { rules, nodes:0, vnodes:0, vmax: 4000+L.vcf*1500, deadline: Date.now()+L.time, stop:false, width: L.width||[10] };\n  if (L.vcf && !opp5.length){ const v = vcf(c, n, col, L.vcf, ctx); if (v>=0) return { move: v, cands }; }\n  if (!L.depth){ // \ucd08\uae09: \ub208\uc55e\uc758 \ubaa8\uc591\ub9cc \ubcf4\uace0 \ub460 (\uac00\ub054 \ub9c9\uc744 \uacf3\uc744 \ub193\uce68)\n    const careless = rnd() < L.miss;\n    const pool = all.map(x=>({ p:x.p, s:(x.a + x.d*(careless?0.25:0.8)) * (1 + (rnd()-0.5)*2*L.noise) + rnd()*60 }));\n    pool.sort((u,v)=>v.s-u.s); return { move: pool[0].p, cands };\n  }\n  let list = all;\n  if (opp5.length) list = opp5;\n  else if (all.some(x=>x.d>=SWIN)) list = all.filter(x=>x.d>=1300 || x.a>=1600);\n  list = list.slice().sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0, ctx.width[0]);\n  // \uace0\uae09: \uc0c1\ub300\uc5d0\uac8c \uc5f0\uc18d 4 \uc2b9\ub9ac\ub97c \ud5c8\uc6a9\ud558\ub294 \uc218 \uac70\ub974\uae30\n  if (L.oppVcf && list.length>1){\n    const safe = list.filter(x=>{ c[x.p]=col; const ctx2 = { rules, vnodes:0, vmax:2500 }; const r = vcf(c, n, 3-col, 12, ctx2); c[x.p]=0; return r<0; });\n    if (safe.length) list = safe;\n  }\n  let bestMove = list[0].p, bestScores = null;\n  for (let d=1; d<=L.depth; d++){\n    const sc = []; let alpha=-Infinity; ctx.stop=false;\n    for (const x of list){ c[x.p]=col; const v = -search(c, n, 3-col, d-1, -Infinity, -alpha, ctx, 1); c[x.p]=0; if (ctx.stop) break; sc.push({p:x.p, v}); if (v>alpha) alpha=v; }\n    if (ctx.stop && sc.length < list.length) break;\n    sc.sort((u,v)=>v.v-u.v); bestScores = sc; bestMove = sc[0].p;\n    list = sc.map(s=>list.find(x=>x.p===s.p));\n    ctx.reached = d; if (sc[0].v >= WIN-100 || Date.now() > ctx.deadline) break;\n  }\n  if (L.noise && bestScores && bestScores.length>1 && bestScores[0].v < WIN-100){\n    const top = bestScores[0].v, ok = bestScores.filter(s=>s.v >= top - Math.abs(top)*L.noise - 200 && s.v > -WIN+100);\n    if (ok.length) bestMove = ok[(rnd()*Math.min(ok.length,3))|0].p;\n  }\n  return { move: bestMove, cands, depth: ctx.reached||0 };\n}\n// \uace0\ubbfc \ub3d9\uc791\uc6a9: \ube60\ub978 \uc720\ub825 \ud6c4\ubcf4\nfunction quickCands(cells, n, col, rules, k){\n  const c = Int8Array.from(cells);\n  return scored(c, n, col, rules).filter(x=>x.a>=0).sort((u,v)=>(v.a+v.d*0.85)-(u.a+u.d*0.85)).slice(0,k||5).map(x=>x.p);\n}\nfunction forbiddenPoints(cells, n, col, rules){\n  if (!banFor(rules, col)) return [];\n  const c = Int8Array.from(cells), out = [];\n  for (const p of gen(c, n, 2)){ let o3=0; for (const [dx,dy] of DIRS){ const s = shapeAt(c,n,p,col,dx,dy); if (s===OPEN3) o3++; } if (o3>=2 && isForbidden(c,n,p,col,rules,2)) out.push(p); }\n  return out;\n}\nroot.OM = { BLACK, WHITE, Game, isForbidden, makesFive, fiveLine, decide, quickCands, forbiddenPoints, pointScore, vcf, LEVELS, shapeAt, SH:{NONE,TWO,OPEN2,THREE,OPEN3,FOUR,OPEN4,FIVE,OVER}, DIRS, banFor };\n})(typeof self!=='undefined' ? self : this);\n(function(root){\nconst OM = root.OM, { makesFive, isForbidden } = OM;\nfunction genAll(c,n){ const o=[]; for (let p=0;p<n*n;p++) if(!c[p]) o.push(p); return o; }\nfunction fivePoints(c,n,col,rules){ const o=[]; for (const p of genAll(c,n)){ c[p]=col; const f=makesFive(c,n,p,col); c[p]=0; if (f) o.push(p); } return o; }\nfunction forcedWin(c,n,col,plies,rules){\n  if (plies<=0) return false;\n  const pts = genAll(c,n);\n  for (const p of pts){ c[p]=col; const f=makesFive(c,n,p,col); c[p]=0; if (f) return true; }\n  for (const p of pts){ if (isForbidden(c,n,p,col,rules)) continue; c[p]=col; const ok = oppLoses(c,n,3-col,plies-1,rules); c[p]=0; if (ok) return true; }\n  return false;\n}\nfunction oppLoses(c,n,opp,plies,rules){\n  const col = 3-opp;\n  if (fivePoints(c,n,opp,rules).some(p=>!isForbidden(c,n,p,opp,rules))) return false;\n  const fp = fivePoints(c,n,col,rules);\n  if (fp.length>=2) return true;\n  if (fp.length===1 && isForbidden(c,n,fp[0],opp,rules)) return true;\n  if (plies<=0) return false;\n  const replies = fp.length===1 ? fp : genAll(c,n);\n  for (const q of replies){ if (isForbidden(c,n,q,opp,rules)) continue; c[q]=opp; const w=forcedWin(c,n,col,plies,rules); c[q]=0; if (!w) return false; }\n  return true;\n}\nfunction oppOpen4(c,n,opp,rules){ // \uc0c1\ub300\uac00 \ub2e4\uc74c \uc218\uc5d0 \ub2e4\uc12f \ub610\ub294 \ub9c9\uc744 \uc218 \uc5c6\ub294 \ub137\uc744 \ub9cc\ub4e4 \uc218 \uc788\ub098\n  for (const p of genAll(c,n)){ if (isForbidden(c,n,p,opp,rules)) continue; c[p]=opp; const f = makesFive(c,n,p,opp) || fivePoints(c,n,opp,rules).length>=2; c[p]=0; if (f) return true; }\n  return false;\n}\n// \uad50\uc721 \uc815\ub2f5 \ud310\uc815 (p\uc5d0 \ud751\uc744 \ub193\uc740 \ub4a4)\nfunction lessonGoal(cells,n,p,goal,rules){\n  const c = Int8Array.from(cells), col = 1;\n  if (c[p]) return { ok:false, why:'taken' };\n  if (goal==='forbidden') return { ok: isForbidden(c,n,p,col,rules) };\n  if (isForbidden(c,n,p,col,rules)) return { ok:false, why:'forbidden' };\n  c[p]=col;\n  const five = makesFive(c,n,p,col);\n  let over = false; for (const [dx,dy] of OM.DIRS){ let k=1,x=p%n+dx,y=((p/n)|0)+dy; while(x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){k++;x+=dx;y+=dy;} x=p%n-dx;y=((p/n)|0)-dy; while(x>=0&&y>=0&&x<n&&y<n&&c[y*n+x]===col){k++;x-=dx;y-=dy;} if(k>5) over=true; }\n  if (goal==='five') return { ok: five, why: over?'over':'' };\n  if (goal==='block') return { ok: fivePoints(c,n,2,rules).length===0 };\n  if (goal==='open4') return { ok: five || fivePoints(c,n,col,rules).length>=2 };\n  if (goal==='stop3') return { ok: !oppOpen4(c,n,2,rules) };\n  if (goal==='win1') return { ok: five || oppLoses(c,n,2,0,rules) };\n  if (goal==='win2') return { ok: five || oppLoses(c,n,2,1,rules) };\n  return { ok:false };\n}\nOM.lessonGoal = lessonGoal; OM.fivePoints = fivePoints; OM.forcedWin = forcedWin;\n})(typeof self!=='undefined' ? self : this);\n";
+</script>
+<script>
+window.LESSONS = [
+{ title:'오목은 이런 게임', type:'place', text:'오목은 흑과 백이 번갈아 한 알씩 놓아서,\n가로·세로·대각선으로 다섯 알을 먼저 이으면 이기는 게임이에요.\n흑이 먼저 둬요. 판 한가운데 점에 첫 돌을 놓아보세요.', ok:'좋아요! 보통 첫 돌은 한가운데에 둬요. 어느 쪽으로든 뻗어나가기 좋거든요.', bad:'판 정중앙의 굵은 점을 눌러보세요.',
+  rows:['.........','.........','.........','.........','....*....','.........','.........','.........','.........'] },
+{ title:'다섯 알 잇기', type:'move', goal:'five', text:'흑 돌 네 알이 가로로 나란히 있어요.\n한 알만 더 이으면 다섯! 이기는 자리에 놓아보세요.', ok:'이겼어요! 양쪽 끝 어디든 다섯이 돼요.', bad:'네 알이 이어진 줄의 바로 끝을 찾아보세요.',
+  rows:['.........','.........','.........','..XXXX...','...O.O...','....O....','.....O...','.........','.........'] },
+{ title:'대각선도 돼요', type:'move', goal:'five', text:'다섯 줄은 가로·세로만이 아니라 대각선(비스듬히)도 돼요.\n이번엔 대각선으로 다섯을 만들어보세요.', ok:'맞아요! 대각선도 똑같이 다섯이면 승리예요.', bad:'비스듬히 이어진 흑 네 알의 끝을 보세요.',
+  rows:['.........','.........','..X......','...X.O...','....X....','..O..X...','...O.....','.........','.........'] },
+{ title:'상대의 넷 막기', type:'move', goal:'block', text:'백이 네 알을 이었어요! 다음에 백이 한 알만 더 놓으면 져요.\n백이 다섯을 못 만들게 막아보세요.', ok:'잘 막았어요. 상대가 넷이면 무조건 막아야 해요.', bad:'그러면 백이 다섯을 만들어요. 백 넷의 열린 쪽 끝을 막아야 해요.',
+  rows:['.........','.........','.......X.','.........','.XOOOO...','...X.....','....X....','.........','.........'] },
+{ title:'열린 넷은 이긴 거예요', type:'move', goal:'open4', text:'흑 셋이 양쪽이 비어 있게 놓여 있어요.\n한 알 더 이어서 양쪽 끝이 다 열린 넷(활사)을 만들어보세요.\n양쪽이 열린 넷은 상대가 한쪽만 막을 수 있어서 막을 방법이 없어요.', ok:'열린 넷 완성! 백이 한쪽을 막아도 다른 쪽에 놓으면 다섯이에요.', bad:'그러면 한쪽이 막힌 넷이 되거나 넷이 안 돼요. 셋의 바로 옆에 붙여 양쪽 끝을 열어두세요.',
+  rows:['.........','.........','....O....','.........','...XXX...','..O...O..','.........','.........','.........'] },
+{ title:'열린 셋은 바로 막기', type:'move', goal:'stop3', text:'이번엔 백이 양쪽이 열린 셋을 만들었어요.\n그냥 두면 백이 열린 넷을 만들어서 막을 수 없게 돼요.\n지금 바로 막아보세요.', ok:'잘했어요! 열린 셋은 바로 옆 끝을 막는 게 기본이에요.', bad:'그러면 백이 반대쪽으로 열린 넷을 만들어요. 셋의 바로 옆 끝을 막아보세요.',
+  rows:['.........','.........','.........','....X....','...OOO...','.........','...X.....','.........','.........'] },
+{ title:'띈 셋도 위험해요', type:'move', goal:'stop3', text:'백 돌이 한 칸 띄고 셋이 있어요 (● ● _ ●).\n띈 셋도 빈칸을 메우면 열린 넷이 돼요. 막아보세요.\n가운데 빈칸을 막는 게 가장 깔끔해요.', ok:'맞아요! 띈 셋도 셋이에요. 빈칸이나 끝을 막아야 해요.', bad:'그러면 백이 빈칸을 메워 열린 넷을 만들어요.',
+  rows:['.........','.........','....X....','.........','..OO.O...','.........','....X....','.........','.........'] },
+{ title:'삼삼은 금지!', type:'forbidden', text:'한 수로 열린 셋이 두 줄 동시에 생기는 자리를 "삼삼(쌍삼)"이라고 해요.\n삼삼은 막을 방법이 없어서 둘 수 없는 금지 자리예요.\n흑이 놓으면 삼삼이 되는 자리를 찾아 눌러보세요.', ok:'정답! 그 자리는 가로·세로 열린 셋이 동시에 생겨서 둘 수 없어요. 대국 중에는 금지 자리에 빨간 ✕가 보여요.', bad:'거기는 둘 수 있는 자리예요. 가로 흑 둘과 세로 흑 둘이 만나는 곳을 찾아보세요.',
+  rows:['.........','.........','....X....','....X....','..XX.....','.........','......O..','.........','.O.......'] },
+{ title:'사삼은 괜찮아요', type:'move', goal:'win2', text:'삼삼은 금지지만, 넷 하나 + 열린 셋 하나(사삼)는 둘 수 있어요.\n사삼을 만들면 상대가 넷을 막는 사이에 셋이 열린 넷이 돼서 이겨요.\n사삼이 되는 자리를 찾아보세요.', ok:'사삼 완성! 백이 넷을 막으면, 세로 셋을 열린 넷으로 만들면 이겨요.', bad:'넷과 열린 셋이 동시에 생기는 자리를 찾아보세요. 가로 흑 셋과 세로 흑 둘이 만나는 곳이에요.',
+  rows:['.........','.........','....X....','....X....','OXXX.....','.........','.........','.....O...','.........'] },
+{ title:'사사도 괜찮아요', type:'move', goal:'win1', text:'넷이 두 줄 동시에 생기는 사사(4-4)도 둘 수 있어요.\n상대는 한 곳만 막을 수 있으니 바로 이긴 거예요.\n사사가 되는 자리를 찾아보세요.', ok:'사사 완성! 두 곳 중 한 곳만 막을 수 있어요.', bad:'가로 셋과 세로 셋이 만나는 자리를 찾아보세요.',
+  rows:['....O....','....X....','....X....','....X....','OXXX.....','.........','.........','......O..','.........'] },
+{ title:'여섯은 승리가 아니에요', type:'move', goal:'five', text:'딱 다섯 알이어야 이겨요. 여섯 알 이상(장목)은 승리가 아니에요.\n흑이 이기는 자리를 찾아보세요. 함정이 있어요!', ok:'맞아요! 빈칸을 메우면 여섯이 돼서 이기지 못해요. 반대쪽 끝이 정답이에요.', bad:'',
+  rows:['.........','.........','.........','.......O.','.XXXX.X..','..O.O....','.........','.........','.........'] },
+{ title:'연속 넷으로 끝내기', type:'seq', text:'상대가 꼭 막아야 하는 넷을 계속 만들면서 이기는 방법이에요.\n흑 차례예요. 넷을 만드는 수로 시작해서 끝까지 이겨보세요.\n(백은 자동으로 막아요)', ok:'멋져요! 넷 → 넷 → 다섯. 이렇게 상대가 쉴 틈 없이 몰아붙이는 게 오목의 기술이에요.', bad:'넷(다섯 바로 전)을 만드는 수로 몰아붙여야 해요.',
+  rows:['.........','.........','.........','.........','OXXX.....','.....O...','....X....','....X....','..O......'] },
+{ title:'이제 실전!', type:'finish', text:'다 배웠어요!\n· 다섯 알을 먼저 이으면 승리 (여섯은 안 돼요)\n· 상대 넷은 무조건, 열린 셋도 바로 막기\n· 삼삼은 금지, 사삼·사사는 괜찮아요\n이제 초급 AI와 한 판 둬보세요.', ok:'', rows:['.........','.........','.........','.........','.........','.........','.........','.........','.........'] }
+];
+
+</script>
+<script>
+(function(){
+'use strict';
+const { BLACK, WHITE, Game } = OM;
+const LVN = ['초급','중급','고급'], BANS = ['both','black'];
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('sudam.omok.v1.'+k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('sudam.omok.v1.'+k, JSON.stringify(v)); }catch(e){} }
+};
+let settings = Object.assign({ sound:true, coords:true, confirm:false, showBan:true, level:0, size:15, color:1, ban:0, pvpSize:15, pvpBan:0 }, store.get('settings',{}));
+let rec = Object.assign({ games:[], grade:0, lessons:{} }, store.get('rec',{}));
+let G = store.get('game', null);   // { mode, n, level, human, ban, moves, hints, undos, over }
+let B = null, anim = null, thinkGhost = null, banCache = null, flashBan = null;
+let thinking = false, aiToken = 0, hintMove = null, pending = null, screen = 'home', ending = false;
+const $ = id => document.getElementById(id);
+let toastT; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
+function show(n){ screen=n; document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===n)); if(n==='home') renderHome(); if(n==='learn') renderLessons(); if(n==='records') renderRecords(); window.scrollTo(0,0); }
+function closeAll(){ document.querySelectorAll('.dim').forEach(d=>d.classList.remove('on')); }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeAll);
+document.querySelectorAll('.dim').forEach(d=>d.addEventListener('click',e=>{ if(e.target===d) closeAll(); }));
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ closeAll(); show('home'); });
+function ask(title, text, yes, onYes){ $('askTitle').textContent=title; $('askText').textContent=text; $('askYes').textContent=yes; $('askYes').onclick=()=>{ closeAll(); onYes(); }; $('askModal').classList.add('on'); }
+const rulesOf = g => ({ ban: g && g.ban==='black' ? 'black' : 'both' });
+
+// ---------- 기력 ----------
+const gradeName = g => g < 18 ? (18-g)+'급' : (g-17)+'단';
+const CAP = [8, 15, 21], FLOOR = [0, 7, 13]; // 초급 10급, 중급 3급, 고급 4단 까지
+function renderGrade(){
+  $('myGrade').textContent = gradeName(rec.grade);
+  $('gradeBar').style.width = Math.min(100, rec.grade/21*100)+'%';
+  const lv = rec.grade < 8 ? 0 : rec.grade < 15 ? 1 : 2;
+  $('gradeTip').textContent = '추천 상대: '+LVN[lv]+' · 이기면 기력이 올라가요';
+}
+
+// ---------- 소리 ----------
+let actx = null;
+function clack(){
+  if (!settings.sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t = actx.currentTime, len = 0.09, buf = actx.createBuffer(1, actx.sampleRate*len, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++){ const k=i/d.length; d[i]=(Math.random()*2-1)*Math.pow(1-k,6); }
+    const src=actx.createBufferSource(); src.buffer=buf;
+    const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2300; f.Q.value=1.4;
+    const g=actx.createGain(); g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.01,t+len);
+    src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t);
+  }catch(e){}
+}
+
+// ---------- 판 그리기 ----------
+const LET = 'ABCDEFGHJKLMNOPQRST';
+function stars(n){ if (n===9) return [[2,2],[6,2],[4,4],[2,6],[6,6]]; if (n===15) return [[3,3],[11,3],[7,7],[3,11],[11,11]]; return [[3,3],[9,3],[15,3],[3,9],[9,9],[15,9],[3,15],[9,15],[15,15]]; }
+function drawBoard(el, b, o){
+  o = o || {};
+  const n = b.n, V = n+1, coords = o.coords && settings.coords, U = el.id || 'bd';
+  let s = '<svg viewBox="0 0 '+V+' '+V+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+n+'줄 오목판">'+
+    '<defs><radialGradient id="'+U+'gb" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#777"/><stop offset=".45" stop-color="#222"/><stop offset="1" stop-color="#050505"/></radialGradient>'+
+    '<radialGradient id="'+U+'gw" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".7" stop-color="#ece7da"/><stop offset="1" stop-color="#cfc7b5"/></radialGradient>'+
+    '<filter id="'+U+'sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx=".04" dy=".07" stdDeviation=".05" flood-color="#3a2408" flood-opacity=".55"/></filter></defs>';
+  const sw = n>=19 ? .035 : .04;
+  for (let i=1;i<=n;i++){ s += '<line x1="1" y1="'+i+'" x2="'+n+'" y2="'+i+'" stroke="#3B2A17" stroke-width="'+sw+'"/><line x1="'+i+'" y1="1" x2="'+i+'" y2="'+n+'" stroke="#3B2A17" stroke-width="'+sw+'"/>'; }
+  s += '<rect x="1" y="1" width="'+(n-1)+'" height="'+(n-1)+'" fill="none" stroke="#3B2A17" stroke-width="'+(sw*2)+'"/>';
+  for (const [x,y] of stars(n)) s += '<circle cx="'+(x+1)+'" cy="'+(y+1)+'" r="'+(n>=15?.12:.1)+'" fill="#3B2A17"/>';
+  if (coords){ const fs = n>=19 ? .34 : .36;
+    for (let i=0;i<n;i++){ s += '<text x="'+(i+1)+'" y=".5" font-size="'+fs+'" text-anchor="middle" dominant-baseline="middle" fill="#5a3d1c" font-family="serif">'+LET[i]+'</text>';
+      s += '<text x=".45" y="'+(i+1)+'" font-size="'+fs+'" text-anchor="middle" dominant-baseline="middle" fill="#5a3d1c" font-family="serif">'+(n-i)+'</text>'; } }
+  // 금지 자리
+  if (o.bans) for (const p of o.bans){ const x=p%n+1, y=((p/n)|0)+1, r=.2; s += '<path class="ban" d="M'+(x-r)+' '+(y-r)+'l'+(2*r)+' '+(2*r)+'M'+(x+r)+' '+(y-r)+'l'+(-2*r)+' '+(2*r)+'" stroke="#C23A30" stroke-width=".08" stroke-linecap="round" opacity=".85"/>'; }
+  if (o.flash!=null){ const x=o.flash%n+1, y=((o.flash/n)|0)+1; s += '<circle cx="'+x+'" cy="'+y+'" r=".44" fill="#C23A30" opacity=".22"/><path d="M'+(x-.25)+' '+(y-.25)+'l.5 .5M'+(x+.25)+' '+(y-.25)+'l-.5 .5" stroke="#C23A30" stroke-width=".1" stroke-linecap="round"/>'; }
+  for (let p=0;p<n*n;p++){ const v=b.c[p]; if (!v) continue; const x=p%n+1, y=((p/n)|0)+1;
+    const drop = o.anim && o.anim.drop===p && Date.now()<o.anim.until;
+    s += '<circle cx="'+x+'" cy="'+y+'" r=".46" fill="url(#'+U+(v===BLACK?'gb':'gw')+')" filter="url(#'+U+'sh)"'+(drop?' class="drop"':'')+'/>'; }
+  if (o.last!=null && o.last>=0 && b.c[o.last]){ const x=o.last%n+1, y=((o.last/n)|0)+1, v=b.c[o.last]; s += '<circle cx="'+x+'" cy="'+y+'" r=".15" fill="'+(v===BLACK?'#fff':'#A8322D')+'" opacity=".9"/>'; }
+  if (o.marks) for (const m of o.marks){ const x=m.p%n+1, y=((m.p/n)|0)+1;
+    if (m.kind==='ring') s += '<circle cx="'+x+'" cy="'+y+'" r=".42" fill="none" stroke="#2F6B3A" stroke-width=".09" stroke-dasharray=".18 .1"/>';
+    else if (m.kind==='x') s += '<path d="M'+(x-.24)+' '+(y-.24)+'l.48 .48M'+(x+.24)+' '+(y-.24)+'l-.48 .48" stroke="#C23A30" stroke-width=".11" stroke-linecap="round"/>'; }
+  if (o.win && o.win.length){ const pts = o.win.map(p=>[p%n+1, ((p/n)|0)+1]).sort((a,c)=>a[0]-c[0]||a[1]-c[1]); const a=pts[0], z=pts[pts.length-1];
+    s += '<line class="wl" pathLength="20" x1="'+a[0]+'" y1="'+a[1]+'" x2="'+z[0]+'" y2="'+z[1]+'" stroke="#C23A30" stroke-width=".16" stroke-linecap="round" opacity=".9"/>'; }
+  if (o.ghost){ const x=o.ghost.p%n+1, y=((o.ghost.p/n)|0)+1; s += '<circle cx="'+x+'" cy="'+y+'" r=".46" fill="url(#'+U+(o.ghost.col===BLACK?'gb':'gw')+')" opacity="'+(o.ghost.think?'.4':'.55')+'"'+(o.ghost.think?' class="tg"':'')+'/>'; }
+  s += '</svg>';
+  el.innerHTML = s;
+}
+function pointFrom(el, n, e){
+  const r = el.getBoundingClientRect(), V = n+1;
+  const x = Math.round((e.clientX - r.left)/r.width*V) - 1, y = Math.round((e.clientY - r.top)/r.height*V) - 1;
+  return (x<0||y<0||x>=n||y>=n) ? null : y*n+x;
+}
+
+// ---------- AI 계산 (따로 돌려서 화면이 멈추지 않게) ----------
+let worker = null, workerOK = typeof Worker!=='undefined', reqId = 0;
+function getWorker(){
+  if (!workerOK || !window.OM_SRC) return null; if (worker) return worker;
+  try{
+    const src = window.OM_SRC + '\nonmessage=function(e){var d=e.data;var r=OM.decide(d.cells,d.n,d.col,d.level,d.rules);postMessage({id:d.id,move:r.move});};';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type:'text/javascript' })));
+    worker.onerror = ()=>{ workerOK = false; worker = null; };
+    return worker;
+  }catch(e){ workerOK = false; return null; }
+}
+function computeAI(level, cb){
+  const cells = Array.from(B.c), n = B.n, col = B.toMove, rules = rulesOf(G), id = ++reqId;
+  let done = false; const finish = m=>{ if (done) return; done = true; cb(m); };
+  const sync = ()=>{ try{ finish(OM.decide(cells, n, col, level, rules).move); }catch(e){ finish(-1); } };
+  const w = getWorker();
+  if (!w){ setTimeout(sync, 30); return; }
+  const prev = w.onmessage;
+  w.onmessage = e=>{ if (e.data.id===id) finish(e.data.move); else if (prev) prev(e); };
+  w.postMessage({ id, cells, n, col, level, rules });
+  setTimeout(()=>{ if (!done) sync(); }, 9000);
+}
+function legalAI(m){ return m!=null && m>=0 && m<B.c.length && !B.c[m] && !OM.isForbidden(B.c, B.n, m, B.toMove, rulesOf(G)); }
+
+// ---------- 홈 ----------
+function renderHome(){
+  renderGrade();
+  const live = G && !G.over;
+  $('resume').hidden = !live;
+  if (live) $('rsInfo').textContent = (G.mode==='pvp' ? '둘이서 · ' : G.mode==='online' ? '온라인 · 방 '+G.code+' · ' : 'AI '+LVN[G.level]+' · ')+G.n+'줄 · '+G.moves.length+'수';
+  const done = Object.keys(rec.lessons).length;
+  $('learnInfo').textContent = done ? done+' / '+LESSONS.length+'강 완료' : '완전 처음이라면 여기부터 · '+LESSONS.length+'강';
+}
+$('resume').onclick = ()=>{ openGame(); };
+$('goPlay').onclick = ()=>{ renderSetup(); $('setup').classList.add('on'); };
+function renderPvp(){
+  chips('pSize', settings.pvpSize, v=>{ settings.pvpSize=v; store.set('settings',settings); renderPvp(); });
+  chips('pBan', settings.pvpBan, v=>{ settings.pvpBan=v; store.set('settings',settings); renderPvp(); });
+}
+$('goPvp').onclick = ()=>{ renderPvp(); $('pvpSetup').classList.add('on'); };
+$('goLearn').onclick = ()=>show('learn');
+$('goRecords').onclick = ()=>show('records');
+$('goRules').onclick = ()=>show('rules');
+function chips(id, val, f){ document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===val)); b.onclick=()=>f(+b.dataset.v); }); }
+function renderSetup(){
+  chips('sLevel', settings.level, v=>{ settings.level=v; store.set('settings',settings); renderSetup(); });
+  chips('sSize', settings.size, v=>{ settings.size=v; store.set('settings',settings); renderSetup(); });
+  chips('sColor', settings.color, v=>{ settings.color=v; store.set('settings',settings); renderSetup(); });
+  chips('sBan', settings.ban, v=>{ settings.ban=v; store.set('settings',settings); renderSetup(); });
+}
+$('startGame').onclick = ()=>{ closeAll(); newGame('ai', settings.size, settings.level, settings.color||(Math.random()<.5?BLACK:WHITE), BANS[settings.ban]); };
+$('startPvp').onclick = ()=>{ closeAll(); newGame('pvp', settings.pvpSize, 0, BLACK, BANS[settings.pvpBan]); };
+
+// ---------- 대국 ----------
+function logResult(winner, how){
+  if (!G || G.logged) return 0; G.logged = true;
+  const entry = { t:Date.now(), mode:G.mode, n:G.n, level:G.level, human:G.human, ban:G.ban, winner, how, moves:G.moves.length, hints:G.hints, undos:G.undos };
+  let change = 0;
+  if (G.mode==='ai'){
+    const won = winner===G.human;
+    if (won && !G.hints && !G.undos && rec.grade < CAP[G.level]){ rec.grade++; change = 1; }
+    if (!won && winner && rec.grade > FLOOR[G.level] && rec.grade > 0 && how!=='quit'){ rec.grade--; change = -1; }
+    entry.result = won ? 'win' : (winner ? 'lose' : 'draw');
+  }
+  if (G.mode==='online'){ entry.result = !winner ? 'draw' : winner===G.human ? 'win' : 'lose'; entry.opp = G.opp; entry.code = G.code; }
+  entry.change = change;
+  rec.games.unshift(entry); if (rec.games.length>300) rec.games.length=300;
+  store.set('rec', rec);
+  return change;
+}
+function newGame(mode, n, level, human, ban){
+  aiToken++; thinking=false; $('think').hidden=true;
+  if (G && !G.over && G.mode==='ai' && G.moves.length>4) logResult(3-G.human, 'quit');
+  if (G && G.mode==='online') netStop();
+  G = { mode, n, level, human, ban: ban||'both', moves:[], hints:0, undos:0, over:false };
+  hintMove=null; pending=null; anim=null; banCache=null; ending=false;
+  B = new Game(n); save(); openGame();
+}
+function rebuild(){ B = new Game(G.n); for (const m of G.moves) B.play(m); banCache = null; }
+function save(){ store.set('game', G); }
+function openGame(){
+  if (!B || B.n!==G.n || B.moves.length!==G.moves.length) rebuild();
+  ending = false; show('game'); if (G.mode==='online') netWatch(); renderGame();
+  if (B.winner && !G.over){ endGame(B.winner===3?0:B.winner, B.winner===3?'full':'five'); return; }
+  if (!G.over && G.mode==='ai' && B.toMove!==G.human) aiTurn();
+}
+// ---------- 온라인 대전 ----------
+let netRoom = null, netStopFn = null, netPres = null;
+const NG = 'omok';
+const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
+let netOn = false;
+function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
+function oppName(room, mySeat){ for (const k in room.seats||{}) if (+k.slice(1)!==mySeat) return room.seats[k].name; return '상대'; }
+function netStart(room, seat){
+  const st = parseSt(room);
+  if (room.host===NET.uid && !st.moves){ // 처음 시작: 방장이 판 정보 기록
+    const o = room.opts||{}; const blackSeat = o.color===1 ? 0 : o.color===2 ? 1 : (Math.random()<.5?0:1);
+    NET.commit(NG, room.code, room.seq||0, cur=>{ const s=parseSt(cur); if (s.moves) return undefined; cur.st = JSON.stringify({ moves:[], black:blackSeat, round:1 }); return cur; });
+  }
+  newOnline(room, seat, st.moves ? st : null);
+}
+function newOnline(room, seat, st){
+  netStop();
+  const o = room.opts||{};
+  G = { mode:'online', code:room.code, seat, n:o.n||15, ban:o.ban||'both', human: st ? (st.black===seat?BLACK:WHITE) : (seat===0 ? (o.color===2?WHITE:BLACK) : (o.color===2?BLACK:WHITE)), opp: oppName(room, seat), round: st ? st.round : 1, moves: st ? st.moves.slice() : [], hints:0, undos:0, over:false, level:0 };
+  netRoom = room; hintMove=null; pending=null; anim=null; banCache=null; ending=false;
+  B = new Game(G.n); for (const m of G.moves) B.play(m);
+  save(); openGame();
+}
+function netWatch(){
+  if (netOn || !window.NET) return; netOn = true;
+  const code = G.code, seat = G.seat;
+  NET.presence(NG, code).then(f=>{ netPres = f; }).catch(()=>{});
+  NET.watch(NG, code, room=>{
+    if (!G || G.mode!=='online' || G.code!==code || !room) return;
+    netRoom = room; G.opp = oppName(room, seat);
+    const st = parseSt(room); if (!st.moves){ renderGame(); return; }
+    if (st.round!==G.round){ // 새 판 (한 판 더)
+      G = Object.assign(G, { round:st.round, human: st.black===seat?BLACK:WHITE, moves:st.moves.slice(), over:false, logged:false, winner:null });
+      B = new Game(G.n); for (const m of G.moves) B.play(m); anim=null; banCache=null; ending=false; save(); show('game'); renderGame(); toast('새 판 시작! 이번엔 '+(G.human===BLACK?'흑(먼저)':'백')+'이에요'); return; }
+    if (G.human == null || (st.black!=null && (st.black===seat?BLACK:WHITE)!==G.human)){ G.human = st.black===seat?BLACK:WHITE; }
+    const same = G.moves.every((m,i)=>st.moves[i]===m);
+    if (st.moves.length > G.moves.length && same){
+      for (let i=G.moves.length;i<st.moves.length;i++){ const m=st.moves[i]; B.play(m); G.moves.push(m); anim={drop:m, until:Date.now()+600}; }
+      clack(); save(); if (screen==='game' && !afterMove()) renderGame(); else if (screen!=='game') save();
+    } else if (!same || st.moves.length < G.moves.length){ G.moves = st.moves.slice(); B = new Game(G.n); for (const m of G.moves) B.play(m); banCache=null; save(); if (screen==='game') renderGame(); }
+    else if (screen==='game') renderGame();
+    if (st.end && !G.over){ if (screen==='game' || screen==='home'){ const w = st.end.winner; toast(st.end.how==='resign' ? (w===G.human?'상대가 기권했어요':'기권했어요') : ''); endGame(w, st.end.how); } }
+  }).then(f=>{ if (netOn) netStopFn = f; else f(); });
+}
+function netSend(p){
+  const code = G.code, n = G.moves.length - 1;
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(p); cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
+}
+function netEnd(winner, how){
+  const code = G.code;
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
+  endGame(winner, how);
+}
+function netRematch(){
+  const code = G.code;
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (s.round!==G.round) return cur; cur.st = JSON.stringify({ moves:[], black: 1-(s.black||0), round:(s.round||1)+1 }); return cur; })
+    .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); });
+  show('game');
+}
+const NETCFG = {
+  game: NG, title:'오목', max:2,
+  optsHTML: '<span class="nt-lbl">판</span><div class="nt-chips" id="noN"><button data-v="15">15줄</button><button data-v="19">19줄</button></div><span class="nt-lbl">내 돌</span><div class="nt-chips" id="noC"><button data-v="1">흑 (먼저)</button><button data-v="2">백</button><button data-v="0">무작위</button></div><span class="nt-lbl">삼삼 금지</span><div class="nt-chips" id="noB"><button data-v="0">흑백 모두</button><button data-v="1">흑만</button></div>',
+  bindOpts(){ const o = Object.assign({ n:15, c:1, b:0 }, store.get('netopt',{}));
+    const bind=(id,k)=>document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o[k])); b.onclick=()=>{ o[k]=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; });
+    bind('noN','n'); bind('noC','c'); bind('noB','b'); },
+  getOpts(){ const o = Object.assign({ n:15, c:1, b:0 }, store.get('netopt',{})); return { opts:{ n:o.n, color:o.c, ban:BANS[o.b] }, seat:0 }; },
+  describe: o => (o.n||15)+'줄 · 삼삼 '+(o.ban==='black'?'흑만':'모두')+' · 방장 '+(o.color===1?'흑':o.color===2?'백':'무작위'),
+  seatName: (s, room) => s===0 ? '방장' : '',
+  onStart: (room, seat) => { closeAll(); netStart(room, seat); }
+};
+if (window.NET){ $('goOnline').hidden = false; $('goOnline').onclick = ()=>NET.open(NETCFG);
+  const lc = NET.linkCode(); if (lc){ NET.clearLink(); setTimeout(()=>NET.open(NETCFG, lc), 300); } }
+function names(){
+  if (G.mode==='pvp') return ['흑','백'];
+  if (G.mode==='online'){ const me='나 ('+(NET.name()||'나')+')', op=G.opp||'상대'; return G.human===BLACK ? [me, op] : [op, me]; }
+  return G.human===BLACK ? ['나', 'AI '+LVN[G.level]] : ['AI '+LVN[G.level], '나'];
+}
+function humanTurn(){ return !G.over && !B.winner && (G.mode==='pvp' || B.toMove===G.human); }
+const remoteTurn = () => (G.mode==='ai' || G.mode==='online') && B.toMove!==G.human;
+function bansNow(){
+  if (!settings.showBan || !humanTurn() || thinking || !OM.banFor(rulesOf(G), B.toMove)) return null;
+  if (!banCache || banCache.k!==B.moves.length) banCache = { k:B.moves.length, list: OM.forbiddenPoints(B.c, B.n, B.toMove, rulesOf(G)) };
+  return banCache.list;
+}
+function renderGame(){
+  const [nb, nw] = names(), R = rulesOf(G);
+  $('gTitle').textContent = G.mode==='pvp' ? '둘이서 · '+G.n+'줄' : G.mode==='online' ? '온라인 · '+G.n+'줄' : 'AI '+LVN[G.level]+' · '+G.n+'줄';
+  $('netBar').hidden = G.mode!=='online'; if (G.mode==='online' && netRoom) NET.statusBar($('netBar'), netRoom);
+  $('gMove').textContent = G.moves.length+'수';
+  $('pBName').textContent = nb; $('pWName').textContent = nw;
+  $('pBSub').innerHTML = '흑 · 먼저 <span class="rulechip">삼삼 금지</span>';
+  $('pWSub').innerHTML = R.ban==='both' ? '백 <span class="rulechip">삼삼 금지</span>' : '백 · 삼삼 가능';
+  const live = !G.over && !B.winner;
+  $('pB').classList.toggle('turn', live && B.toMove===BLACK); $('pW').classList.toggle('turn', live && B.toMove===WHITE);
+  const marks = []; if (hintMove!=null && hintMove>=0) marks.push({p:hintMove, kind:'ring'});
+  drawBoard($('goban'), B, { coords:true, last:B.last, marks, anim, bans: bansNow(), flash: flashBan, win: B.winLine,
+    ghost: pending!=null ? {p:pending, col:B.toMove} : (thinking && thinkGhost!=null ? {p:thinkGhost, col:B.toMove, think:true} : null) });
+  if (anim) anim.until = 0; // 모션은 한 번만
+  const myTurn = humanTurn() && !thinking && !ending;
+  $('undoBtn').disabled = !myTurn || !G.moves.length || (G.mode==='ai' && G.moves.length<(G.human===BLACK?1:2));
+  if (G.mode==='online') $('undoBtn').disabled = true;
+  $('hintBtn').disabled = !myTurn || G.mode==='online'; $('resignBtn').disabled = G.over || ending || (G.mode==='ai' && thinking);
+  let st;
+  if (B.winner===BLACK || B.winner===WHITE) st = (B.winner===BLACK?'흑':'백')+' 다섯! ';
+  else if (B.winner===3) st = '판이 가득 찼어요 · 무승부';
+  else if (thinking) st = 'AI가 생각하는 중…';
+  else if (G.over) st = '대국 끝';
+  else if (G.mode==='online' && B.toMove!==G.human) st = (G.opp||'상대')+' 차례 · 기다리는 중…';
+  else { const who = B.toMove===BLACK ? '흑' : '백'; st = (G.mode==='pvp' ? who+' 차례' : (B.toMove===G.human ? '내 차례 ('+who+')' : who+' 차례'));
+    if (settings.confirm && pending!=null) st = '한 번 더 누르면 착수'; }
+  $('gStatus').textContent = st;
+}
+function playMove(p){
+  if (B.c[p]){ toast('이미 돌이 있어요'); return false; }
+  if (OM.isForbidden(B.c, B.n, p, B.toMove, rulesOf(G))){
+    toast('삼삼 금지 자리예요 — 열린 셋이 두 줄 동시에 생겨요');
+    flashBan = p; renderGame(); setTimeout(()=>{ if (flashBan===p){ flashBan=null; if (screen==='game') renderGame(); } }, 1200);
+    return false;
+  }
+  B.play(p); G.moves.push(p); anim = { drop:p, until:Date.now()+600 }; hintMove=null; pending=null; flashBan=null; clack(); save();
+  return true;
+}
+function afterMove(){
+  renderGame();
+  if (B.winner){ ending = true; renderGame();
+    if (B.winner===3) toast('무승부예요');
+    else toast((B.winner===BLACK?'흑':'백')+' 다섯! '+(G.mode==='ai' ? (B.winner===G.human?'이겼어요':'AI가 이겼어요') : ''));
+    const tk = aiToken; setTimeout(()=>{ if (tk!==aiToken || screen!=='game') return; endGame(B.winner===3?0:B.winner, B.winner===3?'full':'five'); }, 1500);
+    return true; }
+  return false;
+}
+$('goban').addEventListener('click', e=>{
+  if (!G || G.over || thinking || ending || B.winner) return;
+  const p = pointFrom($('goban'), G.n, e); if (p==null) return;
+  if (remoteTurn()) return;
+  if (settings.confirm && pending!==p){ if (!B.c[p] && !OM.isForbidden(B.c,B.n,p,B.toMove,rulesOf(G))){ pending=p; renderGame(); } else playMove(p); return; }
+  if (playMove(p)){ if (G.mode==='online') netSend(p); if (afterMove()) return; if (G.mode==='ai') aiTurn(); }
+});
+let hoverP = null;
+$('goban').addEventListener('pointermove', e=>{
+  if (e.pointerType!=='mouse' || !G || G.over || thinking || ending || B.winner || settings.confirm) return;
+  if (remoteTurn()) return;
+  const p = pointFrom($('goban'), G.n, e);
+  if (p===hoverP) return; hoverP = p;
+  const marks=[]; if (hintMove!=null&&hintMove>=0) marks.push({p:hintMove,kind:'ring'});
+  drawBoard($('goban'), B, { coords:true, last:B.last, marks, bans: bansNow(), ghost: (p!=null && !B.c[p] && !(bansNow()||[]).includes(p)) ? {p, col:B.toMove} : null });
+});
+$('goban').addEventListener('pointerleave', ()=>{ hoverP=null; if (G && screen==='game') renderGame(); });
+
+function aiTurn(){
+  if (G.over || G.mode!=='ai' || B.toMove===G.human || B.winner) return;
+  thinking = true; thinkGhost = null; const token = ++aiToken; renderGame();
+  $('think').hidden = false; $('thinkBar').style.width='0%';
+  const t0 = Date.now(), target = 1200 + Math.random()*1800;
+  const cands = OM.quickCands(B.c, B.n, B.toMove, rulesOf(G), 4);
+  let result; let lastGesture = 0;
+  computeAI(G.level, m=>{ if (token===aiToken) result = m; });
+  (function step(){
+    if (token!==aiToken) return;
+    const el = Date.now()-t0;
+    $('thinkBar').style.width = Math.min(100, el/target*100)+'%';
+    // 고민하는 동작: 유력한 자리 몇 곳에 돌을 살짝 올려봄
+    if (el - lastGesture > 520 && el < target - 300 && cands.length){ lastGesture = el;
+      thinkGhost = Math.random()<.85 ? cands[(Math.random()*cands.length)|0] : null; renderGame(); }
+    if (result===undefined || el < target){ setTimeout(step, 60); return; }
+    thinking = false; thinkGhost = null; $('think').hidden = true;
+    let m = result;
+    if (!legalAI(m)){ const q = OM.quickCands(B.c, B.n, B.toMove, rulesOf(G), 1); m = q.length ? q[0] : -1; }
+    if (m<0){ endGame(G.human, 'resign'); return; }
+    B.play(m); G.moves.push(m); anim = { drop:m, until:Date.now()+600 }; clack(); save();
+    afterMove();
+  })();
+}
+$('undoBtn').onclick = ()=>{
+  if (thinking || G.over || ending || !G.moves.length) return;
+  let k = 1;
+  if (G.mode==='ai'){ k = B.toMove===G.human ? 2 : 1; if (G.moves.length < k) k = G.moves.length; }
+  G.moves.splice(G.moves.length-k, k); G.undos++; hintMove=null; pending=null; anim=null; rebuild(); save(); renderGame();
+  if (G.mode==='ai' && B.toMove!==G.human) aiTurn();
+};
+$('hintBtn').onclick = ()=>{
+  if (thinking || G.over || ending) return;
+  G.hints++; save(); thinking = true; const token = ++aiToken; renderGame(); $('think').hidden=false; $('thinkBar').style.width='30%';
+  computeAI(2, m=>{ if (token!==aiToken) return; thinking=false; $('think').hidden=true;
+    hintMove = legalAI(m) ? m : null; if (hintMove!=null) toast('초록 점선 자리를 추천해요'); renderGame(); });
+};
+$('resignBtn').onclick = ()=>{
+  if (G.over || ending) return;
+  if (G.mode==='online'){ ask('기권할까요?', '상대가 이긴 것으로 끝나요.', '기권', ()=>netEnd(3-G.human, 'resign')); return; }
+  if (G.mode==='pvp'){ const who = B.toMove===BLACK?'흑':'백'; ask(who+' 기권', who+'이 기권하고 대국을 끝낼까요?', '기권', ()=>endGame(3-B.toMove,'resign')); return; }
+  ask('기권할까요?', '이 대국은 패배로 기록돼요.', '기권', ()=>{ aiToken++; thinking=false; $('think').hidden=true; endGame(3-G.human,'resign'); });
+};
+$('gHome').onclick = ()=>{ if (G && G.mode==='online'){ show('home'); return; } aiToken++; thinking=false; $('think').hidden=true; pending=null;
+  if (ending && B.winner && !G.over) endGame(B.winner===3?0:B.winner, B.winner===3?'full':'five', true);
+  show('home'); };
+
+function endGame(winner, how, silent){
+  aiToken++; thinking=false; ending=false; $('think').hidden=true;
+  G.over = true; G.winner = winner; save();
+  const change = logResult(winner, how);
+  if (silent) return;
+  const [nb, nw] = names();
+  if (G.mode==='ai' || G.mode==='online') $('rTitle').textContent = !winner ? '무승부' : winner===G.human ? '이겼어요!' : '졌어요';
+  else $('rTitle').textContent = !winner ? '무승부' : (winner===BLACK?'흑':'백')+' 승';
+  const loser = winner===BLACK ? '백' : '흑';
+  $('rSub').textContent = (how==='resign' ? loser+' 기권' : how==='five' ? (winner===BLACK?'흑':'백')+' 다섯 완성' : how==='full' ? '판이 가득 참' : '') + ' · '+G.n+'줄 · '+G.moves.length+'수 · 삼삼 금지 '+(G.ban==='black'?'흑만':'흑백 모두');
+  const rg = $('rGrade');
+  if (G.mode==='ai'){ rg.hidden=false;
+    rg.innerHTML = '<span class="lbl">내 기력</span><b class="title" style="font-size:24px">'+gradeName(rec.grade)+'</b><span class="muted" style="font-size:13px">'+(change>0?'▲ 1급 올랐어요':change<0?'▼ 1급 내려갔어요':(winner===G.human && (G.hints||G.undos)?'무르기·힌트를 써서 기력은 그대로예요':winner===G.human && rec.grade>=CAP[G.level]?'이 단계로는 더 오를 수 없어요. 다음 단계에 도전해보세요':'그대로예요'))+'</span>'; }
+  else rg.hidden = true;
+  drawBoard($('rBoard'), B, { last:B.last, win:B.winLine });
+  $('rAgain').textContent = G.mode==='online' ? '같은 상대와 한 판 더 (흑백 바꿈)' : '한 판 더';
+  $('rAgain').onclick = ()=> G.mode==='online' ? netRematch() : G.mode==='pvp' ? newGame('pvp', G.n, 0, BLACK, G.ban) : newGame('ai', G.n, G.level, G.human, G.ban);
+  show('result');
+}
+
+// ---------- 배우기 ----------
+const LR = { ban:'both' };
+let LI = 0, LB = null, lessonDone = false, lBusy = false;
+function renderLessons(){
+  $('lessonList').innerHTML = LESSONS.map((l,i)=>'<button class="lrow'+(rec.lessons[i]?' done':'')+'" data-i="'+i+'"><span class="no">'+(rec.lessons[i]?'✓':i+1)+'</span><span style="flex-grow:1"><b style="font-family:var(--serif)">'+l.title+'</b></span><span class="muted">›</span></button>').join('');
+  document.querySelectorAll('.lrow').forEach(b=>b.onclick=()=>openLesson(+b.dataset.i));
+}
+function lessonBoard(les){
+  const n = les.rows.length, b = new Game(n), ans = [];
+  les.rows.forEach((r,y)=>[...r].forEach((ch,x)=>{ const p=y*n+x; if (ch==='X') b.c[p]=BLACK; else if (ch==='O') b.c[p]=WHITE; else if (ch==='*') ans.push(p); }));
+  b.toMove = BLACK; return { b, ans };
+}
+function openLesson(i){
+  LI = i; const les = LESSONS[i]; const { b, ans } = lessonBoard(les);
+  LB = { b, ans, marks:[], anim:null, win:null }; lessonDone = false; lBusy = false;
+  $('lTitle').textContent = les.title; $('lNo').textContent = (i+1)+'/'+LESSONS.length;
+  $('lText').textContent = les.text;
+  $('lFeed').hidden = true; $('lNext').textContent = i===LESSONS.length-1 ? '목록으로' : '다음 강';
+  $('lRetry').hidden = les.type==='finish';
+  if (les.type==='finish') $('lNext').textContent = '초급 AI와 대국';
+  show('lesson'); drawLesson();
+}
+function drawLesson(){ drawBoard($('lBoard'), LB.b, { last: LB.b.last, marks: LB.marks, anim: LB.anim, win: LB.win }); if (LB.anim) LB.anim.until = 0; }
+function feed(good, text){ const f=$('lFeed'); f.hidden=false; f.className='feedback '+(good?'good':'bad'); f.textContent=text; }
+function lessonOk(){ lessonDone = true; rec.lessons[LI] = 1; store.set('rec', rec); feed(true, LESSONS[LI].ok); }
+function lPut(p, col){ LB.b.c[p]=col; LB.b.last=p; LB.anim={drop:p, until:Date.now()+600}; const L = OM.fiveLine(LB.b.c, LB.b.n, p, col); if (L) LB.win = L; clack(); drawLesson(); return L; }
+$('lBoard').addEventListener('click', e=>{
+  const les = LESSONS[LI]; if (lessonDone || lBusy || les.type==='finish') return;
+  const b = LB.b, n = b.n, p = pointFrom($('lBoard'), n, e); if (p==null) return;
+  if (b.c[p]){ feed(false,'이미 돌이 있는 자리예요.'); return; }
+  if (les.type==='place'){ if (LB.ans.includes(p)){ lPut(p, BLACK); lessonOk(); } else feed(false, les.bad); return; }
+  if (les.type==='forbidden'){ if (OM.isForbidden(b.c,n,p,BLACK,LR)){ LB.marks=[{p,kind:'x'}]; drawLesson(); lessonOk(); } else feed(false, les.bad); return; }
+  if (OM.isForbidden(b.c,n,p,BLACK,LR)){ LB.marks=[{p,kind:'x'}]; drawLesson(); feed(false,'거기는 삼삼 금지 자리라 둘 수 없어요.'); setTimeout(()=>{ LB.marks=[]; drawLesson(); }, 1200); return; }
+  if (les.type==='move'){
+    const r = OM.lessonGoal(b.c, n, p, les.goal, LR);
+    if (r.ok){ LB.marks=[]; lPut(p, BLACK); lessonOk(); }
+    else feed(false, r.why==='over' ? '그 자리는 여섯 알(장목)이 돼서 승리가 아니에요. 다른 끝을 찾아보세요.' : les.bad);
+    return;
+  }
+  if (les.type==='seq'){
+    b.c[p]=BLACK; const five = OM.makesFive(b.c,n,p,BLACK); const fp = five ? [] : OM.fivePoints(b.c,n,BLACK,LR); let good = five;
+    if (!five && fp.length){ if (fp.length>=2) good = true; else { b.c[fp[0]]=WHITE; good = OM.vcf(b.c,n,BLACK,10,{rules:LR,vnodes:0,vmax:9999})>=0 || OM.fivePoints(b.c,n,BLACK,LR).length>0; b.c[fp[0]]=0; } }
+    b.c[p]=0;
+    if (!good){ feed(false, fp.length ? '그 넷은 막히고 나면 더 이어지지 않아요. 다른 넷을 찾아보세요.' : les.bad); return; }
+    $('lFeed').hidden = true;
+    if (lPut(p, BLACK)){ lessonOk(); return; }
+    lBusy = true; feed(true, fp.length>=2 ? '열린 넷! 백이 한쪽을 막아요…' : '넷! 백이 막아요…');
+    setTimeout(()=>{ lPut(fp[0], WHITE); lBusy = false; feed(true, '좋아요. 계속 몰아붙이세요!'); }, 650);
+  }
+});
+$('lRetry').onclick = ()=>openLesson(LI);
+$('lNext').onclick = ()=>{
+  const les = LESSONS[LI];
+  if (les.type==='finish'){ rec.lessons[LI]=1; store.set('rec',rec); newGame('ai', 15, 0, BLACK, 'both'); return; }
+  if (LI < LESSONS.length-1) openLesson(LI+1); else show('learn');
+};
+$('lBack').onclick = ()=>show('learn');
+
+// ---------- 기록 ----------
+function when(ts){ const d=new Date(ts), p=n=>(n<10?'0':'')+n; return (d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function renderRecords(){
+  const ai = rec.games.filter(g=>g.mode==='ai');
+  let h = '<div class="card"><div class="grade"><div><div class="lbl">내 기력</div><div class="g">'+gradeName(rec.grade)+'</div></div><div class="muted" style="font-size:13px">AI 대국 '+ai.length+'판 · 배우기 '+Object.keys(rec.lessons).length+'/'+LESSONS.length+'강</div></div></div>';
+  h += '<div class="grid3">'+[0,1,2].map(lv=>{ const g=ai.filter(x=>x.level===lv), w=g.filter(x=>x.result==='win').length, l=g.filter(x=>x.result==='lose').length; return '<div class="stat"><span>'+LVN[lv]+'</span><b>'+w+'승 '+l+'패</b><span>'+(g.length?Math.round(w/g.length*100)+'%':'-')+'</span></div>'; }).join('')+'</div>';
+  if (rec.games.length) h += '<div class="hist">'+rec.games.slice(0,60).map(g=>{
+    if (g.mode==='online') return '<div><span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span><span style="flex-grow:1">온라인 · '+(g.opp?g.opp+' 님 · ':'')+g.n+'줄 · '+g.moves+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 방 '+g.code+'</span></span><span class="muted">'+(g.how==='resign'?'기권':g.how==='full'?'무승부':'다섯')+'</span></div>';
+    const res = g.mode==='pvp' ? '<span class="tag draw">'+(g.winner===BLACK?'흑 승':g.winner===WHITE?'백 승':'무')+'</span>' : '<span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span>';
+    const how = g.how==='resign'?'기권':g.how==='quit'?'중단':g.how==='full'?'무승부':'다섯';
+    return '<div>'+res+'<span style="flex-grow:1">'+(g.mode==='pvp'?'둘이서':'AI '+LVN[g.level])+' · '+g.n+'줄 · '+g.moves+'수'+(g.mode==='ai'?' · '+(g.human===BLACK?'흑':'백'):'')+'<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 삼삼 '+(g.ban==='black'?'흑만':'모두')+(g.change?(g.change>0?' · ▲1급':' · ▼1급'):'')+'</span></span><span class="muted">'+how+'</span></div>'; }).join('')+'</div>';
+  else h += '<div class="card muted" style="text-align:center">아직 대국 기록이 없어요</div>';
+  $('recBody').innerHTML = h;
+}
+
+// ---------- 설정 ----------
+function renderSettings(){ document.querySelectorAll('[data-set]').forEach(b=>b.setAttribute('aria-checked', String(!!settings[b.dataset.set]))); }
+$('openSettings').onclick = ()=>{ renderSettings(); $('settings').classList.add('on'); };
+document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{ const k=b.dataset.set; settings[k]=!settings[k]; store.set('settings',settings); renderSettings(); if (screen==='game') renderGame(); });
+
+show('home');
+window.__LB = ()=>LB.b;
+window.__om = { get G(){ return G; }, get B(){ return B; }, get thinking(){ return thinking; }, get ending(){ return ending; }, newGame, openLesson, show, get rec(){ return rec; }, endGame, playAt(p){ if (playMove(p)){ if (!afterMove() && G.mode==='ai') aiTurn(); return true; } return false; } };
+})();
+</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});</script>
+</body>
+</html>

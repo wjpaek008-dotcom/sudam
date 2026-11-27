@@ -1,0 +1,18 @@
+{
+  "name": "수담 게임방",
+  "short_name": "수담",
+  "description": "바둑 · 장기 · 오목 · 타일톡 · 스도쿠 — AI 대국과 친구 온라인 대전",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3EAD7",
+  "theme_color": "#A8322D",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

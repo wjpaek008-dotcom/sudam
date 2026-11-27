@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "rooms": {
+      "$game": {
+        ".read": "$game === 'omok' || $game === 'baduk' || $game === 'janggi' || $game === 'tile'",
+        ".indexOn": ["t"],
+        "$code": {
+          ".write": "$game === 'omok' || $game === 'baduk' || $game === 'janggi' || $game === 'tile'",
+          ".validate": "$code.matches(/^[0-9]{4}$/) && (!newData.child('st').exists() || newData.child('st').val().length < 100000)"
+        }
+      }
+    }
+  }
+}

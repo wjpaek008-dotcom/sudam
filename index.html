@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수담 게임방</title>
+<meta name="theme-color" content="#A8322D">
+<meta name="description" content="바둑 · 장기 · 오목 · 타일톡 · 스도쿠 — AI 대국과 친구 온라인 대전">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F3EAD7;--paper2:#EADFC6;--ink:#2A1E14;--sub:#6B5A48;--line:#D6C6A6;--card:#FBF6EA;--seal:#A8322D;--serif:'Noto Serif KR',serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;color:var(--ink);font-family:'Noto Sans KR',system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--paper) radial-gradient(circle at 20% 10%,rgba(255,255,255,.5),transparent 60%)}
+button,a{font-family:inherit;color:inherit}
+.app{max-width:560px;margin:0 auto;padding:22px 16px 30px;display:flex;flex-direction:column;gap:14px}
+.head{display:flex;align-items:center;gap:12px}
+.seal{width:54px;height:54px;border-radius:12px;background:var(--seal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:26px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+h1{margin:0;font-family:var(--serif);font-weight:900;font-size:30px;letter-spacing:-.5px}
+.sub{color:var(--sub);font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.game{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);text-decoration:none;box-shadow:0 2px 0 rgba(120,90,50,.08);min-height:150px}
+.game:active{transform:scale(.98)}
+.game .ic{width:56px;height:56px;border-radius:14px;background:var(--paper2);display:flex;align-items:center;justify-content:center}
+.game b{font-family:var(--serif);font-size:18px}
+.game small{color:var(--sub);font-size:12px;line-height:1.45}
+.game .tag{align-self:flex-start;font-size:11px;font-weight:700;color:var(--seal);background:#F3DCD6;padding:2px 8px;border-radius:999px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{height:52px;border-radius:14px;border:0;font-size:16px;font-weight:700;width:100%;cursor:pointer;background:var(--ink);color:#F7EFDD}
+.btn.seal{background:var(--seal);color:#fff}
+.btn.plain{background:var(--card);border:1px solid var(--line);font-weight:500}
+.row{display:flex;gap:8px;align-items:center}
+.in{height:52px;border-radius:14px;border:1px solid var(--line);background:#fff;font-size:24px;letter-spacing:8px;text-align:center;flex:1 1 0;min-width:0;font-family:inherit}
+.err{font-size:13px;color:var(--seal);min-height:18px}
+.muted{color:var(--sub);font-size:13px;line-height:1.55}
+.kakao{background:#FEE500;color:#191600;border:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="head"><div class="seal" aria-hidden="true">手</div><div><h1>수담 게임방</h1><div class="sub">손으로 나누는 대화 · AI 대국과 친구 온라인 대전</div></div></div>
+
+  <div class="card" id="kakaoBox" hidden style="background:#FFF9D6;border-color:#EAD86A">
+    <b>카톡 안에서 열렸어요</b>
+    <span class="muted">게임은 여기서도 되지만, <b>바탕화면에 설치</b>하려면 크롬에서 열어야 해요.</span>
+    <button class="btn kakao" id="openChrome">크롬으로 열기</button>
+  </div>
+  <div class="card" id="installBox" hidden>
+    <b>바탕화면에 설치하기</b>
+    <span class="muted" id="installTip">설치하면 아이콘을 눌러 앱처럼 바로 열려요. 인터넷이 없어도 AI 대국·배우기·스도쿠는 돼요.</span>
+    <button class="btn seal" id="installBtn">앱 설치</button>
+  </div>
+
+  <div class="grid">
+    <a class="game" href="baduk/"><div class="ic"><svg width="34" height="34" viewBox="0 0 28 28" aria-hidden="true"><circle cx="10" cy="12" r="7" fill="#1b1b1b"/><circle cx="18" cy="17" r="7" fill="#f8f5ee" stroke="#b9b1a0"/></svg></div><b>수담 바둑</b><small>AI 초급~고급 · 배우기 15강 · 9·13·19줄</small><span class="tag">온라인 대전</span></a>
+    <a class="game" href="janggi/"><div class="ic"><svg width="38" height="38" viewBox="-1 -1 2 2" aria-hidden="true"><polygon points="-.37,-.9 .37,-.9 .9,-.37 .9,.37 .37,.9 -.37,.9 -.9,.37 -.9,-.37" fill="#f8efd9" stroke="#8a6a3a" stroke-width=".06"/><text x="0" y=".05" font-size=".95" text-anchor="middle" dominant-baseline="middle" fill="#2F5C8F" font-family="serif" font-weight="700">楚</text></svg></div><b>수담 장기</b><small>AI 초급~고급 · 배우기 14강 · 상차림 선택</small><span class="tag">온라인 대전</span></a>
+    <a class="game" href="omok/"><div class="ic"><svg width="34" height="34" viewBox="0 0 30 30" aria-hidden="true"><g stroke="#3B2A17" stroke-width="1"><path d="M3 15h24M15 3v24"/></g><circle cx="7" cy="7" r="3.2" fill="#1b1b1b"/><circle cx="11" cy="11" r="3.2" fill="#1b1b1b"/><circle cx="15" cy="15" r="3.2" fill="#1b1b1b"/><circle cx="19" cy="19" r="3.2" fill="#1b1b1b"/><circle cx="23" cy="23" r="3.2" fill="#1b1b1b"/></svg></div><b>수담 오목</b><small>삼삼 금지 · AI 초급~고급 · 배우기 13강</small><span class="tag">온라인 대전</span></a>
+    <a class="game" href="tile/"><div class="ic"><svg width="38" height="30" viewBox="0 0 38 30" aria-hidden="true"><rect x="1" y="3" width="11" height="24" rx="3" fill="#fff" stroke="#ccc"/><rect x="13.5" y="3" width="11" height="24" rx="3" fill="#fff" stroke="#ccc"/><rect x="26" y="3" width="11" height="24" rx="3" fill="#fff" stroke="#ccc"/><text x="6.5" y="19" font-size="12" text-anchor="middle" fill="#D7263D" font-weight="700">7</text><text x="19" y="19" font-size="12" text-anchor="middle" fill="#2E58D6" font-weight="700">7</text><text x="31.5" y="19" font-size="12" text-anchor="middle" fill="#E08A00" font-weight="700">7</text></svg></div><b>타일톡</b><small>숫자 타일 이어 붙이기 · AI · 퍼즐</small><span class="tag">온라인 2~4명</span></a>
+    <a class="game" href="sudoku/" style="grid-column:1 / span 2;min-height:0;flex-direction:row;align-items:center"><div class="ic"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="4" fill="#fff" stroke="#8a7a60"/><path d="M10.3 1v28M19.7 1v28M1 10.3h28M1 19.7h28" stroke="#8a7a60"/><text x="5.6" y="8.6" font-size="7" text-anchor="middle" fill="#2A1E14">5</text><text x="15" y="18" font-size="7" text-anchor="middle" fill="#A8322D">3</text><text x="24.4" y="27.4" font-size="7" text-anchor="middle" fill="#2A1E14">8</text></svg></div><div style="display:flex;flex-direction:column;gap:2px"><b>스도쿠</b><small>난이도별 기록 · 오늘의 퍼즐</small></div></a>
+  </div>
+
+  <div class="card">
+    <b>친구가 보낸 방 번호로 들어가기</b>
+    <div class="row"><input class="in" id="code" inputmode="numeric" maxlength="4" placeholder="0000"><button class="btn" id="go" style="width:110px">들어가기</button></div>
+    <div class="err" id="err"></div>
+    <span class="muted">방은 각 게임의 <b>온라인 대전</b>에서 만들 수 있어요. 공개 방은 번호 없이 <b>열린 방</b> 목록에서 바로 들어갈 수 있어요.</span>
+  </div>
+  <div class="muted" style="text-align:center;font-size:12px">개인정보는 받지 않아요 · 온라인 대전에서는 닉네임만 보여요</div>
+</div>
+<script src="net.js"></script>
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const ua = navigator.userAgent, inKakao = /KAKAOTALK/i.test(ua), standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// 카톡 안에서 열림 → 크롬(기본 브라우저)으로
+if (inKakao){ $('kakaoBox').hidden = false;
+  $('openChrome').onclick = ()=>{ const url = location.href;
+    if (/Android/i.test(ua)) location.href = 'intent://' + url.replace(/^https?:\/\//,'') + '#Intent;scheme=https;package=com.android.chrome;end';
+    else location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); }; }
+// 설치
+let deferred = null;
+if (!standalone && !inKakao){ $('installBox').hidden = false;
+  $('installBtn').hidden = true;
+  $('installTip').innerHTML = '크롬 오른쪽 위 <b>⋮ 메뉴 → 홈 화면에 추가(앱 설치)</b>를 누르면 바탕화면에 아이콘이 생겨요. 인터넷이 없어도 AI 대국·배우기·스도쿠는 돼요.'; }
+addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferred = e; if (standalone || inKakao) return;
+  $('installBox').hidden = false; $('installBtn').hidden = false;
+  $('installTip').textContent = '설치하면 아이콘을 눌러 앱처럼 바로 열려요. 인터넷이 없어도 AI 대국·배우기·스도쿠는 돼요.'; });
+$('installBtn').onclick = async ()=>{ if (!deferred) return; deferred.prompt(); const r = await deferred.userChoice; deferred = null; if (r.outcome==='accepted') $('installBox').hidden = true; };
+addEventListener('appinstalled', ()=>{ $('installBox').hidden = true; });
+// 방 번호로 들어가기
+async function go(code){
+  if (!/^\d{4}$/.test(code)){ $('err').textContent = '4자리 숫자를 넣어주세요'; return; }
+  $('err').textContent = '찾는 중…';
+  try{ const g = await NET.findRoom(code); if (!g){ $('err').textContent = '그 번호의 방이 없어요. 번호를 다시 확인해 주세요.'; return; }
+    location.href = g + '/?room=' + code; }
+  catch(e){ $('err').textContent = e.message==='noconfig' ? '온라인 대전은 준비 중이에요' : '인터넷 연결을 확인해 주세요'; }
+}
+$('go').onclick = ()=>go($('code').value.trim());
+$('code').onkeydown = e=>{ if (e.key==='Enter') go($('code').value.trim()); };
+const lc = /[?&]room=(\d{4})/.exec(location.search); if (lc){ $('code').value = lc[1]; go(lc[1]); }
+})();
+</script>
+</body>
+</html>
