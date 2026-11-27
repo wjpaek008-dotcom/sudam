@@ -781,7 +781,12 @@ $('resignBtn').onclick = ()=>{
 };
 $('gHome').onclick = ()=>{ if (G && G.mode==='online'){ sel=-1; show('home'); return; } token++; thinking=false; $('think').hidden=true; sel=-1; show('home'); };
 // ---------- 온라인 대전 ----------
-let netRoom = null, netStopFn = null, netPres = null, netOn = false;
+let netRoom = null, netStopFn = null, netPres = null, netOn = false, netTs = 0, netTl = 0;
+if (window.NET) NET.clock({
+  state: ()=> (G && G.mode==='online' && screen==='game') ? { tl:netTl, ts:netTs, active: !G.over && G.ready, mine: P.turn===G.human, key: G.round+':'+G.moves.length } : null,
+  mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(1-G.human, 'time'); },
+  theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }
+});
 const NG = 'janggi';
 const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
 function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
@@ -812,9 +817,10 @@ function netWatch(){
     if (!G || G.mode!=='online' || G.code!==code || !room) return;
     netRoom = room; G.opp = oppName(room, seat);
     const st = parseSt(room); if (!st.moves){ if (screen==='game') renderGame(); return; }
+    netTs = st.ts || 0; netTl = (room.opts && room.opts.tl) || 0;
     const mySide = sideOf(st, seat);
     if (st.setups[mySide]==null){ // 내 상차림 올리기
-      NET.commit(NG, code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.setups || s.setups[mySide]!=null) return undefined; s.setups[mySide] = settings.setup||0; cur.st=JSON.stringify(s); return cur; });
+      NET.commit(NG, code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.setups || s.setups[mySide]!=null) return undefined; s.setups[mySide] = settings.setup||0; s.ts = NET.now(); cur.st=JSON.stringify(s); return cur; });
     }
     const ready = st.setups[0]!=null && st.setups[1]!=null;
     if (st.round!==G.round || G.human!==mySide || (ready && (!G.ready || G.setups[0]!==st.setups[0] || G.setups[1]!==st.setups[1]))){
@@ -833,16 +839,16 @@ function netWatch(){
       save();
     } else if (!same || st.moves.length < G.moves.length){ G.moves = st.moves.slice(); build(); sel=-1; save(); if (screen==='game') renderGame(); }
     else if (screen==='game') renderGame();
-    if (st.end && !G.over){ toast(st.end.how==='resign' ? (st.end.winner===G.human?'상대가 기권했어요':'기권했어요') : ''); endGame(st.end.winner, st.end.how); }
+    if (st.end && !G.over){ toast(st.end.how==='resign' ? (st.end.winner===G.human?'상대가 기권했어요':'기권했어요') : st.end.how==='time' ? (st.end.winner===G.human?'상대 시간 초과로 이겼어요':'시간 초과로 졌어요') : ''); endGame(st.end.winner, st.end.how); }
   }).then(f=>{ if (netOn) netStopFn = f; else f(); });
 }
 function netSend(m){
   const n = G.moves.length - 1;
-  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(m); cur.st=JSON.stringify(s); return cur; })
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(m); s.ts = NET.now(); cur.st=JSON.stringify(s); return cur; })
     .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
 }
 function netEnd(winner, how){
-  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (s.end) return undefined; s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
   endGame(winner, how);
 }
 function netRematch(){
@@ -850,7 +856,7 @@ function netRematch(){
     .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); });
 }
 const NETCFG = {
-  game: NG, title:'장기', max:2,
+  game: NG, title:'장기', max:2, timeChoices:[0,30,60,180],
   optsHTML: '<span class="nt-lbl">내 편</span><div class="nt-chips" id="njS"><button data-v="0">초 (먼저)</button><button data-v="1">한 (덤 1.5)</button><button data-v="2">무작위</button></div><span class="nt-lbl">내 상차림은 설정에 저장된 걸 써요 (AI 대국 설정에서 바꿀 수 있어요)</span>',
   bindOpts(){ const o = Object.assign({ s:0 }, store.get('netopt',{}));
     document.querySelectorAll('#njS button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o.s)); b.onclick=()=>{ o.s=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; }); },
@@ -876,12 +882,12 @@ function logResult(winner, how){
   if (G.mode==='online'){ e.result = winner===G.human ? 'win' : 'lose'; e.opp = G.opp; e.code = G.code; }
   e.change = change; rec.games.unshift(e); if (rec.games.length>300) rec.games.length=300; store.set('rec', rec); return change;
 }
-const HOW = { mate:'외통', resign:'기권', bikjang:'빅장 점수 승부', passes:'한 수 쉼 점수 승부', limit:'300수 점수 승부' };
+const HOW = { mate:'외통', resign:'기권', time:'시간 초과', bikjang:'빅장 점수 승부', passes:'한 수 쉼 점수 승부', limit:'300수 점수 승부' };
 function endGame(winner, how, sc){
   G.over = true; G.winner = winner; save(); sel=-1;
   const change = logResult(winner, how), [n0, n1] = names();
   $('rTitle').textContent = (G.mode==='ai' || G.mode==='online') ? (winner===G.human?'이겼어요!':'졌어요') : SIDE[winner]+' 승';
-  $('rSub').textContent = SIDE[winner]+' 승 · '+HOW[how]+(how==='resign'?' ('+SIDE[1-winner]+')':'')+' · '+G.moves.length+'수';
+  $('rSub').textContent = SIDE[winner]+' 승 · '+HOW[how]+((how==='resign'||how==='time')?' ('+SIDE[1-winner]+')':'')+' · '+G.moves.length+'수';
   sc = sc || J.scores(P);
   $('rScore').innerHTML = '<div class="card"><span class="muted">'+n0+'</span><b>'+sc.cho+'</b><span class="muted" style="font-size:12px">남은 말 점수</span></div><div class="card"><span class="muted">'+n1+'</span><b>'+sc.han+'</b><span class="muted" style="font-size:12px">남은 말 점수 + 덤 1.5</span></div>';
   if (G.mode==='ai'){ $('rGrade').hidden=false;

@@ -786,14 +786,20 @@ function openGame(){
 let netRoom = null, netStopFn = null, netPres = null;
 const NG = 'omok';
 const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
-let netOn = false;
+let netOn = false, netTs = 0, netTl = 0;
+// 한 수 시간 제한
+if (window.NET) NET.clock({
+  state: ()=> (G && G.mode==='online' && screen==='game') ? { tl:netTl, ts:netTs, active: !G.over && !B.winner && !ending, mine: B.toMove===G.human, key: G.round+':'+G.moves.length } : null,
+  mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(3-G.human, 'time'); },
+  theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }
+});
 function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
 function oppName(room, mySeat){ for (const k in room.seats||{}) if (+k.slice(1)!==mySeat) return room.seats[k].name; return '상대'; }
 function netStart(room, seat){
   const st = parseSt(room);
   if (room.host===NET.uid && !st.moves){ // 처음 시작: 방장이 판 정보 기록
     const o = room.opts||{}; const blackSeat = o.color===1 ? 0 : o.color===2 ? 1 : (Math.random()<.5?0:1);
-    NET.commit(NG, room.code, room.seq||0, cur=>{ const s=parseSt(cur); if (s.moves) return undefined; cur.st = JSON.stringify({ moves:[], black:blackSeat, round:1 }); return cur; });
+    NET.commit(NG, room.code, room.seq||0, cur=>{ const s=parseSt(cur); if (s.moves) return undefined; cur.st = JSON.stringify({ moves:[], black:blackSeat, round:1, ts:NET.now() }); return cur; });
   }
   newOnline(room, seat, st.moves ? st : null);
 }
@@ -813,6 +819,7 @@ function netWatch(){
     if (!G || G.mode!=='online' || G.code!==code || !room) return;
     netRoom = room; G.opp = oppName(room, seat);
     const st = parseSt(room); if (!st.moves){ renderGame(); return; }
+    netTs = st.ts || 0; netTl = (room.opts && room.opts.tl) || 0;
     if (st.round!==G.round){ // 새 판 (한 판 더)
       G = Object.assign(G, { round:st.round, human: st.black===seat?BLACK:WHITE, moves:st.moves.slice(), over:false, logged:false, winner:null });
       B = new Game(G.n); for (const m of G.moves) B.play(m); anim=null; banCache=null; ending=false; save(); show('game'); renderGame(); toast('새 판 시작! 이번엔 '+(G.human===BLACK?'흑(먼저)':'백')+'이에요'); return; }
@@ -823,27 +830,27 @@ function netWatch(){
       clack(); save(); if (screen==='game' && !afterMove()) renderGame(); else if (screen!=='game') save();
     } else if (!same || st.moves.length < G.moves.length){ G.moves = st.moves.slice(); B = new Game(G.n); for (const m of G.moves) B.play(m); banCache=null; save(); if (screen==='game') renderGame(); }
     else if (screen==='game') renderGame();
-    if (st.end && !G.over){ if (screen==='game' || screen==='home'){ const w = st.end.winner; toast(st.end.how==='resign' ? (w===G.human?'상대가 기권했어요':'기권했어요') : ''); endGame(w, st.end.how); } }
+    if (st.end && !G.over){ if (screen==='game' || screen==='home'){ const w = st.end.winner; toast(st.end.how==='resign' ? (w===G.human?'상대가 기권했어요':'기권했어요') : st.end.how==='time' ? (w===G.human?'상대 시간 초과로 이겼어요':'시간 초과로 졌어요') : ''); endGame(w, st.end.how); } }
   }).then(f=>{ if (netOn) netStopFn = f; else f(); });
 }
 function netSend(p){
   const code = G.code, n = G.moves.length - 1;
-  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(p); cur.st=JSON.stringify(s); return cur; })
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(p); s.ts = NET.now(); cur.st=JSON.stringify(s); return cur; })
     .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
 }
 function netEnd(winner, how){
   const code = G.code;
-  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (s.end) return undefined; s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
   endGame(winner, how);
 }
 function netRematch(){
   const code = G.code;
-  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (s.round!==G.round) return cur; cur.st = JSON.stringify({ moves:[], black: 1-(s.black||0), round:(s.round||1)+1 }); return cur; })
+  NET.commit(NG, code, netRoom ? (netRoom.seq||0) : 0, cur=>{ const s=parseSt(cur); if (s.round!==G.round) return cur; cur.st = JSON.stringify({ moves:[], black: 1-(s.black||0), round:(s.round||1)+1, ts:NET.now() }); return cur; })
     .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); });
   show('game');
 }
 const NETCFG = {
-  game: NG, title:'오목', max:2,
+  game: NG, title:'오목', max:2, timeChoices:[0,15,30,60],
   optsHTML: '<span class="nt-lbl">판</span><div class="nt-chips" id="noN"><button data-v="15">15줄</button><button data-v="19">19줄</button></div><span class="nt-lbl">내 돌</span><div class="nt-chips" id="noC"><button data-v="1">흑 (먼저)</button><button data-v="2">백</button><button data-v="0">무작위</button></div><span class="nt-lbl">삼삼 금지</span><div class="nt-chips" id="noB"><button data-v="0">흑백 모두</button><button data-v="1">흑만</button></div>',
   bindOpts(){ const o = Object.assign({ n:15, c:1, b:0 }, store.get('netopt',{}));
     const bind=(id,k)=>document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o[k])); b.onclick=()=>{ o[k]=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; });
@@ -988,7 +995,7 @@ function endGame(winner, how, silent){
   if (G.mode==='ai' || G.mode==='online') $('rTitle').textContent = !winner ? '무승부' : winner===G.human ? '이겼어요!' : '졌어요';
   else $('rTitle').textContent = !winner ? '무승부' : (winner===BLACK?'흑':'백')+' 승';
   const loser = winner===BLACK ? '백' : '흑';
-  $('rSub').textContent = (how==='resign' ? loser+' 기권' : how==='five' ? (winner===BLACK?'흑':'백')+' 다섯 완성' : how==='full' ? '판이 가득 참' : '') + ' · '+G.n+'줄 · '+G.moves.length+'수 · 삼삼 금지 '+(G.ban==='black'?'흑만':'흑백 모두');
+  $('rSub').textContent = (how==='resign' ? loser+' 기권' : how==='time' ? loser+' 시간 초과' : how==='five' ? (winner===BLACK?'흑':'백')+' 다섯 완성' : how==='full' ? '판이 가득 참' : '') + ' · '+G.n+'줄 · '+G.moves.length+'수 · 삼삼 금지 '+(G.ban==='black'?'흑만':'흑백 모두');
   const rg = $('rGrade');
   if (G.mode==='ai'){ rg.hidden=false;
     rg.innerHTML = '<span class="lbl">내 기력</span><b class="title" style="font-size:24px">'+gradeName(rec.grade)+'</b><span class="muted" style="font-size:13px">'+(change>0?'▲ 1급 올랐어요':change<0?'▼ 1급 내려갔어요':(winner===G.human && (G.hints||G.undos)?'무르기·힌트를 써서 기력은 그대로예요':winner===G.human && rec.grade>=CAP[G.level]?'이 단계로는 더 오를 수 없어요. 다음 단계에 도전해보세요':'그대로예요'))+'</span>'; }
@@ -1064,7 +1071,7 @@ function renderRecords(){
   let h = '<div class="card"><div class="grade"><div><div class="lbl">내 기력</div><div class="g">'+gradeName(rec.grade)+'</div></div><div class="muted" style="font-size:13px">AI 대국 '+ai.length+'판 · 배우기 '+Object.keys(rec.lessons).length+'/'+LESSONS.length+'강</div></div></div>';
   h += '<div class="grid3">'+[0,1,2].map(lv=>{ const g=ai.filter(x=>x.level===lv), w=g.filter(x=>x.result==='win').length, l=g.filter(x=>x.result==='lose').length; return '<div class="stat"><span>'+LVN[lv]+'</span><b>'+w+'승 '+l+'패</b><span>'+(g.length?Math.round(w/g.length*100)+'%':'-')+'</span></div>'; }).join('')+'</div>';
   if (rec.games.length) h += '<div class="hist">'+rec.games.slice(0,60).map(g=>{
-    if (g.mode==='online') return '<div><span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span><span style="flex-grow:1">온라인 · '+(g.opp?g.opp+' 님 · ':'')+g.n+'줄 · '+g.moves+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 방 '+g.code+'</span></span><span class="muted">'+(g.how==='resign'?'기권':g.how==='full'?'무승부':'다섯')+'</span></div>';
+    if (g.mode==='online') return '<div><span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span><span style="flex-grow:1">온라인 · '+(g.opp?g.opp+' 님 · ':'')+g.n+'줄 · '+g.moves+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 방 '+g.code+'</span></span><span class="muted">'+(g.how==='resign'?'기권':g.how==='time'?'시간 초과':g.how==='full'?'무승부':'다섯')+'</span></div>';
     const res = g.mode==='pvp' ? '<span class="tag draw">'+(g.winner===BLACK?'흑 승':g.winner===WHITE?'백 승':'무')+'</span>' : '<span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span>';
     const how = g.how==='resign'?'기권':g.how==='quit'?'중단':g.how==='full'?'무승부':'다섯';
     return '<div>'+res+'<span style="flex-grow:1">'+(g.mode==='pvp'?'둘이서':'AI '+LVN[g.level])+' · '+g.n+'줄 · '+g.moves+'수'+(g.mode==='ai'?' · '+(g.human===BLACK?'흑':'백'):'')+'<br><span class="muted" style="font-size:12px">'+when(g.t)+' · 삼삼 '+(g.ban==='black'?'흑만':'모두')+(g.change?(g.change>0?' · ▲1급':' · ▼1급'):'')+'</span></span><span class="muted">'+how+'</span></div>'; }).join('')+'</div>';

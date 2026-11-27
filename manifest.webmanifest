@@ -1,7 +1,7 @@
 {
   "name": "수담 게임방",
   "short_name": "수담",
-  "description": "바둑 · 장기 · 오목 · 타일톡 · 스도쿠 — AI 대국과 친구 온라인 대전",
+  "description": "바둑 · 장기 · 오목 · 체스 · 타일톡 · 스도쿠 — AI 대국과 친구 온라인 대전",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -9,15 +9,18 @@ NET.name = () => LS.get('name', '');
 const BASE = (function(){ const s = document.currentScript && document.currentScript.src; return s ? s.replace(/net\.js(\?.*)?$/, '') : './'; })();
 
 // ---------- 저장소 (Firebase 또는 시험용 로컬) ----------
-let B = null;
+let B = null, OFF = 0;
+NET.now = () => Date.now() + OFF; // 서버 기준 시각 (폰마다 시계가 달라도 같게)
 function loadScript(src){ return new Promise((res, rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('load '+src)); document.head.appendChild(s); }); }
 async function ensure(){
   if (B) return B;
+  if (window.SUDAM_MOCKURL){ B = httpBackend(window.SUDAM_MOCKURL); return B; }
   if (!window.SUDAM_FB){ try{ await loadScript(BASE+'config.js?v='+Date.now()); }catch(e){} }
   if (window.SUDAM_FB && !window.SUDAM_MOCK){
     if (!window.firebase){ await loadScript(BASE+'vendor/firebase-app-compat.js'); await loadScript(BASE+'vendor/firebase-database-compat.js'); }
     const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(window.SUDAM_FB);
     const db = app.database();
+    db.ref('.info/serverTimeOffset').on('value', sn=>{ OFF = sn.val()||0; });
     B = {
       kind:'fb',
       get: p => db.ref(p).get().then(s=>s.val()),
@@ -129,7 +132,7 @@ NET.commit = async (g, code, seq, mutate) => {
 NET.presence = async (g, code) => { const be = await ensure(); const p = rp(g,code)+'/on/'+uid; await be.set(p, true); await be.onDisc(p, false);
   return be.online(c=>{ if (c){ be.set(p, true); be.onDisc(p, false); } }); };
 NET.leavePresence = async (g, code) => { try{ (await ensure()).set(rp(g,code)+'/on/'+uid, false); }catch(e){} };
-NET.findRoom = async code => { const be = await ensure(); for (const g of ['omok','baduk','janggi','tile']){ const r = await be.get(rp(g,code)); if (r && r.t > Date.now()-24*3600e3 && r.status!=='closed') return g; } return null; };
+NET.findRoom = async code => { const be = await ensure(); for (const g of ['omok','baduk','janggi','tile','chess']){ const r = await be.get(rp(g,code)); if (r && r.t > Date.now()-24*3600e3 && r.status!=='closed') return g; } return null; };
 NET.since = () => Date.now() - 3*3600e3;
 NET.watchList = async (g, cb) => { const be = await ensure(); return be.onRecent('rooms/'+g, NET.since(), v=>cb(v ? Object.values(v) : [])); };
 
@@ -196,6 +199,7 @@ function render(){
   if (stopList){ stopList(); stopList=null; }
   let h = head()+'<div class="nt-tabs" id="ntTabs"><button data-t="make">방 만들기</button><button data-t="code">번호로 들어가기</button><button data-t="list">열린 방</button></div>';
   if (tab==='make'){
+    if (cfgG.timeChoices) h += '<span class="nt-lbl">한 수 시간 제한</span><div class="nt-chips" id="ntTL">'+cfgG.timeChoices.map(v=>'<button data-v="'+v+'">'+tlName(v)+'</button>').join('')+'</div>';
     h += (cfgG.optsHTML||'')+'<span class="nt-lbl">방 공개</span><div class="nt-chips" id="ntPub"><button data-v="1">공개<br><small>열린 방 목록에 보임</small></button><button data-v="0">비공개<br><small>번호 아는 사람만</small></button></div><div class="nt-err" id="ntErr"></div><button class="nt-btn" id="ntMake">방 만들기</button>';
   } else if (tab==='code'){
     h += '<span class="nt-lbl">친구에게 받은 방 번호 4자리</span><input class="nt-in" id="ntCode" inputmode="numeric" maxlength="4" placeholder="0000" style="text-align:center;letter-spacing:8px;font-size:26px"><div class="nt-err" id="ntErr"></div><button class="nt-btn" id="ntJoin">들어가기</button>';
@@ -208,11 +212,13 @@ function render(){
   document.getElementById('ntRename').onclick = e=>{ e.preventDefault(); askName(render); };
   if (tab==='make'){
     if (cfgG.bindOpts) cfgG.bindOpts(document.getElementById('ntSheet'));
+    if (cfgG.timeChoices){ let tl = LS.get('tl.'+cfgG.game, cfgG.timeChoices[2]||0);
+      const stl = ()=>document.querySelectorAll('#ntTL button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===tl)); b.onclick=()=>{ tl=+b.dataset.v; LS.set('tl.'+cfgG.game, tl); stl(); }; }); stl(); }
     let pub = LS.get('pub', 1);
     const sp = ()=>document.querySelectorAll('#ntPub button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===pub)); b.onclick=()=>{ pub=+b.dataset.v; LS.set('pub',pub); sp(); }; }); sp();
     document.getElementById('ntMake').onclick = async ()=>{
       const btn = document.getElementById('ntMake'); btn.disabled = true;
-      try{ const o = cfgG.getOpts(); const code = await NET.create(cfgG.game, { pub:!!pub, max:o.max||cfgG.max||2, opts:o.opts, seat:o.seat, name:NET.name() }); waiting(code); }
+      try{ const o = cfgG.getOpts(); if (cfgG.timeChoices){ o.opts = Object.assign({}, o.opts, { tl: LS.get('tl.'+cfgG.game, cfgG.timeChoices[2]||0) }); } const code = await NET.create(cfgG.game, { pub:!!pub, max:o.max||cfgG.max||2, opts:o.opts, seat:o.seat, name:NET.name() }); waiting(code); }
       catch(e){ document.getElementById('ntErr').textContent = '방을 만들지 못했어요. 인터넷 연결을 확인해 주세요.'; btn.disabled=false; }
     };
   } else if (tab==='code'){
@@ -223,7 +229,7 @@ function render(){
     NET.watchList(cfgG.game, rooms=>{
       const L = document.getElementById('ntList'); if (!L) return;
       const open = rooms.filter(r=>r && r.pub && r.status==='wait' && r.t > NET.since() && Object.keys(r.seats||{}).length < (r.max||2) && r.host!==uid).sort((a,b)=>b.t-a.t);
-      L.innerHTML = open.length ? open.map(r=>{ const names=Object.values(r.seats||{}).map(s=>esc(s.name)).join(', '); return '<button class="nt-room" data-c="'+esc(r.code)+'"><span style="flex-grow:1"><b>'+names+'</b> 님의 방<small>'+esc(cfgG.describe ? cfgG.describe(r.opts||{}) : '')+' · '+Object.keys(r.seats||{}).length+'/'+(r.max||2)+'명</small></span><b>'+esc(r.code)+'</b></button>'; }).join('')
+      L.innerHTML = open.length ? open.map(r=>{ const names=Object.values(r.seats||{}).map(s=>esc(s.name)).join(', '); return '<button class="nt-room" data-c="'+esc(r.code)+'"><span style="flex-grow:1"><b>'+names+'</b> 님의 방<small>'+esc(cfgG.describe ? cfgG.describe(r.opts||{}) : '')+((r.opts&&r.opts.tl)?' · 한 수 '+tlName(r.opts.tl):'')+' · '+Object.keys(r.seats||{}).length+'/'+(r.max||2)+'명</small></span><b>'+esc(r.code)+'</b></button>'; }).join('')
         : '<div class="nt-card"><span class="nt-muted">지금 열린 방이 없어요.<br>방을 만들고 친구를 불러보세요.</span></div>';
       L.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>doJoin(b.dataset.c));
     }).then(s=>{ stopList = s; });
@@ -269,6 +275,21 @@ async function leaveWaiting(){
     if (cur.host===uid){ cur.status='closed'; return cur; }
     for (const k in cur.seats||{}) if (cur.seats[k].uid===uid) delete cur.seats[k]; return cur; }); }catch(e){}
 }
+function tlName(v){ return !v ? '제한 없음' : v<60 ? v+'초' : (v/60)+'분'; }
+NET.tlName = tlName;
+// 차례 시간 재기: 내 시간이 다 되면 mineOut, 상대가 시간을 넘기고도 반응이 없으면(앱 닫힘 등) theirsOut
+NET.clock = cfg => {
+  let fired = null;
+  const t = setInterval(()=>{
+    const s = cfg.state(); const el = document.querySelector('#netBar .nt-clock');
+    if (!s || !s.tl || !s.active || !s.ts){ if (el) el.textContent=''; return; }
+    const rem = s.tl - (NET.now() - s.ts)/1000, sec = Math.max(0, Math.ceil(rem));
+    if (el){ el.textContent = (s.mine ? '내 시간 ' : '상대 시간 ') + Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0'); el.style.color = rem<=10 ? '#C23A30' : ''; el.style.fontWeight = rem<=10 ? '700' : ''; }
+    if (rem<=0 && s.mine && fired!==s.key+'m'){ fired = s.key+'m'; cfg.mineOut(); }
+    else if (rem<=-6 && !s.mine && fired!==s.key+'t'){ fired = s.key+'t'; cfg.theirsOut(); }
+  }, 300);
+  return ()=>clearInterval(t);
+};
 // 링크로 들어온 경우 (?room=1234)
 NET.linkCode = () => { const m = /[?&]room=(\d{4})/.exec(location.search); return m ? m[1] : null; };
 NET.clearLink = () => { try{ const u=new URL(location.href); u.searchParams.delete('room'); history.replaceState(null,'',u.toString()); }catch(e){} };
@@ -277,7 +298,9 @@ NET.clearLink = () => { try{ const u=new URL(location.href); u.searchParams.dele
 NET.statusBar = (host, room, seatName) => {
   if (!host) return;
   const seats = Object.keys((room&&room.seats)||{}).map(k=>({ s:+k.slice(1), ...room.seats[k] })).sort((a,b)=>a.s-b.s);
-  host.innerHTML = '<span>방 '+esc(room.code)+'</span>'+seats.map(s=>{ const on = !room.on || room.on[s.uid]!==false; return '<span class="nt-row" style="gap:4px"><span class="nt-dot'+(on?'':' off')+'"></span>'+esc(s.name)+(s.uid===uid?'(나)':'')+'</span>'; }).join('<span style="opacity:.4">·</span>');
+  const pc = host.querySelector('.nt-clock'), prev = pc ? [pc.textContent, pc.style.color, pc.style.fontWeight] : null;
+  host.innerHTML = '<span>방 '+esc(room.code)+'</span>'+seats.map(s=>{ const on = !room.on || room.on[s.uid]!==false; return '<span class="nt-row" style="gap:4px"><span class="nt-dot'+(on?'':' off')+'"></span>'+esc(s.name)+(s.uid===uid?'(나)':'')+'</span>'; }).join('<span style="opacity:.4">·</span>')+((room.opts&&room.opts.tl)?'<span class="nt-clock" style="margin-left:auto;white-space:nowrap"></span>':'');
+  const nc = host.querySelector('.nt-clock'); if (nc && prev){ nc.textContent = prev[0]; nc.style.color = prev[1]; nc.style.fontWeight = prev[2]; }
 };
 NET.css = css;
 (function(){ const st = document.createElement('style'); st.textContent = css; (document.head||document.documentElement).appendChild(st); })();

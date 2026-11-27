@@ -1,7 +1,7 @@
 /* 수담 게임방 — 오프라인 실행 + 자동 업데이트 */
-const V = 'sudam-20261127225752';
+const V = 'sudam-20261128001143';
 const CORE = ['./', './index.html', './net.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png',
-  './baduk/', './janggi/', './omok/', './tile/', './sudoku/', './vendor/firebase-app-compat.js', './vendor/firebase-database-compat.js'];
+  './baduk/', './janggi/', './omok/', './tile/', './chess/', './sudoku/', './vendor/firebase-app-compat.js', './vendor/firebase-database-compat.js'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(new Request(u, { cache:'reload' })).catch(()=>{})))).then(() => self.skipWaiting()));
 });

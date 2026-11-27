@@ -853,8 +853,14 @@ function syncSnapOrder(){
   snap.hand = ordered.concat(snap.hand.filter(id=>!seen.has(id)));
 }
 function sortHand(kind){
-  if (!S) return; lastSort = kind; S.sortMode = kind;
-  if (kind==='custom'){ syncSnapOrder(); return; } // 내가 직접 놓은 순서 그대로
+  if (!S) return;
+  const prev = lastSort;
+  if (prev==='custom' && kind!=='custom') S.customOrder = me().hand.slice(); // 내 배치 기억해 두기
+  lastSort = kind; S.sortMode = kind;
+  if (kind==='custom'){ // 내가 직접 놓은 순서 그대로 (숫자순·색순 보고 돌아와도 복원)
+    if (prev!=='custom' && S.customOrder){ const have = new Set(me().hand), kept = S.customOrder.filter(id=>have.has(id)), ks = new Set(kept);
+      me().hand = kept.concat(me().hand.filter(id=>!ks.has(id))); }
+    syncSnapOrder(); save(); return; }
   const T=S.T;
   const v = id => T[id].j ? 999 : (kind==='num' ? T[id].n*10+T[id].c : T[id].c*100+T[id].n);
   me().hand.sort((a,b)=>v(a)-v(b));
@@ -978,6 +984,8 @@ function moveSelTo(target){
 // ---------- 길게 눌러 끌기 ----------
 const drag = { timer:null, on:false, ids:[], x0:0, y0:0, ghost:null, target:null, at:null, suppress:false, pid:null };
 function dragAllowed(){ return S && S.turn===0 && !S.over && !busy && !discardN; }
+// 내 차례가 아닐 때: 내 타일판 안에서 순서 정리만
+function handOnlyAllowed(){ return S && !S.wait && !S.over && S.mode!=='pz' && !discardN && !dragAllowed(); }
 function groupFor(id, where){
   if (sel.includes(id)) return sel.slice(); // 미리 고른 타일이 있으면 고른 것만
   if (where==='hand' && lastSort==='custom'){ // 내 배치: 내가 나란히 놓은 묶음이면 통째로, 아니면 한 장
@@ -1005,7 +1013,8 @@ function groupFor(id, where){
   return order.slice(order.indexOf(id)); // 누른 타일부터 뒤쪽 타일까지
 }
 function startDrag(id, where, x, y){
-  if (!dragAllowed()) return;
+  drag.handOnly = false;
+  if (!dragAllowed()){ if (where==='hand' && handOnlyAllowed()) drag.handOnly = true; else return; }
   const old = snapBoardIds();
   if (where==='board' && old.has(id) && !me().reg){ toast('등록 전에는 판 위 타일을 못 옮겨요'); return; }
   drag.on = true; drag.ids = groupFor(id, where); drag.suppress = true;
@@ -1059,6 +1068,7 @@ function moveDrag(x, y){
   const g = drag.ghost; if (!g) return;
   g.style.left = (x - 18) + 'px'; g.style.top = (y - 60) + 'px';
   const t = markTarget(x, y, drag.ids);
+  if (drag.handOnly && t.target!=='hand'){ clearMarks(); drag.target = null; drag.at = null; return; }
   drag.target = t.blocked ? null : t.target; drag.at = t.at;
 }
 // 탭으로 고른 뒤 마우스를 판 위로 올리면 놓일 자리 미리 보기
@@ -1107,8 +1117,9 @@ function endDrag(drop){
   renderGame();
 }
 function onDown(e){
-  const t = e.target.closest('.tile'); if (!t || !dragAllowed() || e.button>0) return;
+  const t = e.target.closest('.tile'); if (!t || e.button>0) return;
   const where = t.closest('#hand') ? 'hand' : 'board';
+  if (!dragAllowed() && !(where==='hand' && handOnlyAllowed())) return;
   drag.x0 = e.clientX; drag.y0 = e.clientY; drag.pid = e.pointerId; drag.suppress = false;
   clearTimeout(drag.timer);
   const id = +t.dataset.id;
@@ -1373,7 +1384,30 @@ function showResult(){
 }
 
 // ---------- 온라인 대전 ----------
-let netRoom = null, netStopFn = null, netPres = null, netOn = false;
+let netRoom = null, netStopFn = null, netPres = null, netOn = false, netTs = 0, netTl = 0;
+// 한 수 시간 제한: 시간이 다 되면 자동으로 1장 뽑고 넘김. 차례인 사람이 나가 있으면 다음 사람이 대신 처리
+if (window.NET) NET.clock({
+  state: ()=> (S && S.mode==='online' && !S.wait && screen==='game') ? { tl:netTl, ts:netTs, active: !S.over, mine: S.turn===0, key: S.round+':'+S.v } : null,
+  mineOut: ()=>{
+    if (S.turn!==0 || S.over) return;
+    if (drag.on) endDrag(false);
+    if (discardN){ const pick = TT.aiDiscardPick(S, 0, discardN); TT.discardTiles(S, 0, pick); sel=[]; discardN=0; updateBanner(); toast('시간 초과 — 버릴 타일을 자동으로 골랐어요'); endMyTurn(); return; }
+    if (snap) resetTurn(); snap=null; sel=[];
+    const id = TT.drawTile(S, 0);
+    toast(id!=null ? '시간 초과 — 자동으로 1장 뽑았어요' : '시간 초과 — 넘겼어요');
+    if (id!=null){ sortHand(lastSort); drawnMark = { id, until: Date.now()+3000 }; }
+    if (TT.checkEnd(S)){ finish(); return; }
+    endMyTurn();
+  },
+  theirsOut: ()=>{
+    const N = S.players.length, t = S.turn; if (S.over || t===0 || t!==N-1) return; // 바로 다음 차례인 사람이 대신 처리
+    TT.drawTile(S, t);
+    toast(S.players[t].name+' 님 시간 초과 — 자동으로 1장 뽑고 넘겨요');
+    if (TT.checkEnd(S)){ netPush(); S.remoteEnd = true; finish(); return; }
+    if ((S.seat + t + 1) % N === 0) S.turnNo++;
+    S.turn = 0; snap = null; save(); netPush(); startTurnIfMine(); renderGame();
+  }
+});
 const NG = 'tile';
 const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
 function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
@@ -1392,7 +1426,7 @@ function toCanon(L, seat){
   C.turn = (L.turn + seat) % N;
   if (L.winner!=null && L.winner>=0) C.winner = (L.winner + seat) % N;
   if (C.mission && L.mission && L.mission.by!=null) C.mission.by = (L.mission.by + seat) % N;
-  for (const k of ['mode','code','seat','slot','_seatSlot','wait','v','round','secs','logged','sortMode','remoteEnd','quitBy']) delete C[k];
+  for (const k of ['mode','code','seat','slot','_seatSlot','wait','v','round','secs','logged','sortMode','customOrder','remoteEnd','quitBy']) delete C[k];
   return C;
 }
 function netStart(room, seat){
@@ -1402,7 +1436,7 @@ function netStart(room, seat){
     const o = room.opts||{};
     const C = TT.newGame({ players: seats.map(x=>({ name:x.name, ai:false })), rules:{ joker:o.joker!==false, combo:o.combo!==false, mission:o.mission!==false } });
     C.order = seats.map(x=>x.s); // 실제 자리 번호 순서
-    NET.commit(NG, room.code, room.seq||0, cur=>{ const s2=parseSt(cur); if (s2.C) return undefined; cur.st = JSON.stringify({ C, v:1, round:1 }); return cur; })
+    NET.commit(NG, room.code, room.seq||0, cur=>{ const s2=parseSt(cur); if (s2.C) return undefined; cur.st = JSON.stringify({ C, v:1, round:1, ts:NET.now() }); return cur; })
       .then(()=>{});
   }
   netRoom = room;
@@ -1418,7 +1452,7 @@ function applyRemote(st){
   const seat = st.C.order ? st.C.order.indexOf(slot) : slot; if (seat<0) return;
   const old = S, wasWait = !!old.wait, newRound = st.round!==old.round;
   const L = toLocal(st.C, seat);
-  Object.assign(L, { code:old.code, seat, slot, v:st.v, round:st.round, secs: newRound ? 0 : (old.secs||0), sortMode: old.sortMode });
+  Object.assign(L, { code:old.code, seat, slot, v:st.v, round:st.round, secs: newRound ? 0 : (old.secs||0), sortMode: old.sortMode, customOrder: newRound ? null : old.customOrder });
   if (!newRound) L.logged = old.logged;
   // 내 손패 순서 유지
   if (!wasWait && !newRound && old.players && old.players[0]){ const have = new Set(L.players[0].hand); const kept = old.players[0].hand.filter(id=>have.has(id)), ks = new Set(kept); L.players[0].hand = kept.concat(L.players[0].hand.filter(id=>!ks.has(id))); }
@@ -1442,6 +1476,7 @@ function netWatch(){
   NET.watch(NG, code, room=>{
     if (!S || S.mode!=='online' || S.code!==code || !room) return;
     netRoom = room; const st = parseSt(room);
+    netTs = st.ts || 0; netTl = (room.opts && room.opts.tl) || 0;
     if (st.C && (st.v > (S.v||0) || st.round!==S.round)) applyRemote(st);
     else if (st.end && st.end.quit!=null && !S.over) applyRemote(st);
     else if (screen==='game') renderGame();
@@ -1451,7 +1486,7 @@ const netSeq = () => netRoom ? (netRoom.seq||0) : 0;
 function netPush(){
   const v = S.v||0, C = toCanon(S, S.seat), round = S.round;
   S.v = v+1; save();
-  NET.commit(NG, S.code, netSeq(), cur=>{ const s2=parseSt(cur); if ((s2.v||0)!==v || s2.round!==round) return undefined; cur.st = JSON.stringify({ C, v:v+1, round }); return cur; })
+  NET.commit(NG, S.code, netSeq(), cur=>{ const s2=parseSt(cur); if ((s2.v||0)!==v || s2.round!==round) return undefined; cur.st = JSON.stringify({ C, v:v+1, round, ts:NET.now() }); return cur; })
     .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); S.v = 0; netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
 }
 function netQuit(){
@@ -1465,11 +1500,11 @@ function netRematch(){
     const o = cur.opts||{}, order = s2.C.order, names = s2.C.players.map(p=>p.name);
     const C = TT.newGame({ players: names.map(n=>({ name:n, ai:false })), rules:{ joker:o.joker!==false, combo:o.combo!==false, mission:o.mission!==false } });
     C.order = order; C.turn = (s2.round||1) % names.length; // 시작하는 사람 돌아가며
-    cur.st = JSON.stringify({ C, v:1, round:(s2.round||1)+1 }); return cur; })
+    cur.st = JSON.stringify({ C, v:1, round:(s2.round||1)+1, ts:NET.now() }); return cur; })
     .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); else show('game'); });
 }
 const NETCFG = {
-  game: NG, title:'타일톡', max:4, minStart:2,
+  game: NG, title:'타일톡', max:4, minStart:2, timeChoices:[0,60,120,180],
   optsHTML: '<span class="nt-lbl">인원</span><div class="nt-chips" id="ntM"><button data-v="2">2명</button><button data-v="3">3명</button><button data-v="4">4명</button></div><span class="nt-lbl">규칙은 설정의 조커·연쇄 보너스·라운드 미션을 따라요</span>',
   bindOpts(){ const o = Object.assign({ m:2 }, store.get('netopt',{}));
     document.querySelectorAll('#ntM button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o.m)); b.onclick=()=>{ o.m=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; }); },

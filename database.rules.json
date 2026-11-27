@@ -2,10 +2,10 @@
   "rules": {
     "rooms": {
       "$game": {
-        ".read": "$game === 'omok' || $game === 'baduk' || $game === 'janggi' || $game === 'tile'",
+        ".read": "$game.matches(/^[a-z]{3,12}$/)",
         ".indexOn": ["t"],
         "$code": {
-          ".write": "$game === 'omok' || $game === 'baduk' || $game === 'janggi' || $game === 'tile'",
+          ".write": "$game.matches(/^[a-z]{3,12}$/)",
           ".validate": "$code.matches(/^[0-9]{4}$/) && (!newData.child('st').exists() || newData.child('st').val().length < 100000)"
         }
       }

@@ -1,12 +1,12 @@
 import os, re, subprocess
 R='/home/claude/sudam-site/'
-for cmd in ['python3 /home/claude/omok/build.py','python3 /home/claude/baduk/build.py','python3 /home/claude/janggi/build.py','python3 /home/claude/tiletalk/build.py']:
+for cmd in ['python3 /home/claude/omok/build.py','python3 /home/claude/baduk/build.py','python3 /home/claude/janggi/build.py','python3 /home/claude/tiletalk/build.py','python3 /home/claude/chess/build.py']:
     subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL)
 os.makedirs(R+'sudoku', exist_ok=True)
 open(R+'sudoku/index.html','w').write(open('/home/claude/sudoku03/index.html').read())
 HEAD = '<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icons/favicon.png"><link rel="apple-touch-icon" href="../icons/apple-180.png"><meta name="theme-color" content="#A8322D">'
 TAIL = "<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});</script>"
-for g in ['omok','baduk','janggi','tile','sudoku']:
+for g in ['omok','baduk','janggi','tile','chess','sudoku']:
     p=R+g+'/index.html'; s=open(p).read()
     if 'manifest.webmanifest' not in s: s=s.replace('</head>', HEAD+'\n</head>',1)
     if "register('../sw.js')" not in s:

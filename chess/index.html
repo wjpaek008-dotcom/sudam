@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수담 체스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3EAD7;--paper2:#EADFC6;--ink:#2A1E14;--sub:#6B5A48;--line:#D6C6A6;--card:#FBF6EA;
+  --wood1:#E8C27E;--wood2:#D9AA62;--wood3:#C9964D;--seal:#A8322D;--seal-soft:#F3DCD6;--ok:#2F6B3A;--cho:#1C5A86;--han:#B3261E;
+  --serif:'Noto Serif KR','Nanum Myeongjo',serif;--shadow:0 10px 26px rgba(60,38,16,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;color:var(--ink);font-family:'Noto Sans KR',system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:var(--paper) radial-gradient(circle at 20% 10%,rgba(255,255,255,.5),transparent 60%);}
+button{font-family:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible{outline:3px solid var(--seal);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;min-height:100dvh}
+.screen{display:none;min-height:100dvh;padding:18px 16px 20px;flex-direction:column;gap:14px}
+.screen.on{display:flex}
+.row{display:flex;align-items:center}.between{justify-content:space-between}
+.title{font-family:var(--serif);font-weight:900;letter-spacing:-.5px}
+.muted{color:var(--sub)}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 0 rgba(120,90,50,.08)}
+.btn{height:54px;border-radius:14px;font-size:16px;font-weight:700;width:100%}
+.btn.ink{background:var(--ink);color:#F7EFDD}
+.btn.plain{background:var(--card);border:1px solid var(--line);font-weight:500}
+.btn:active,.tool:active{transform:scale(.97)}
+.seal-mark{width:48px;height:48px;border-radius:10px;background:var(--seal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:22px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.card.menu{flex-direction:row;align-items:center;gap:14px;text-align:left;width:100%}
+.menu .ic{width:52px;height:52px;border-radius:14px;background:var(--paper2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.menu b{font-size:16px;font-family:var(--serif)}.menu small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+.grade{display:flex;align-items:center;gap:12px}
+.grade .g{font-family:var(--serif);font-weight:900;font-size:26px}
+.bar{height:6px;border-radius:3px;background:var(--paper2);overflow:hidden}.bar>i{display:block;height:100%;background:var(--seal)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{flex:1 1 0;min-width:0;min-height:44px;border-radius:12px;background:var(--paper);border:1px solid var(--line);font-size:14px;color:var(--sub);padding:6px 4px;line-height:1.25}
+.chips button small{display:block;font-size:11px}
+.chips button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#F7EFDD;font-weight:700}
+.lbl{font-size:13px;color:var(--sub);font-weight:500}
+/* 장기판 */
+.board{position:relative;width:100%;aspect-ratio:1;border-radius:6px;
+  background:
+    repeating-linear-gradient(91deg,rgba(120,70,20,.07) 0 2px,transparent 2px 10px),
+    repeating-linear-gradient(89deg,rgba(90,50,10,.05) 0 1px,transparent 1px 27px),
+    linear-gradient(165deg,var(--wood1),var(--wood2) 55%,var(--wood3));
+  box-shadow:0 1px 0 #F7DFAE inset,0 -3px 0 rgba(80,45,10,.25) inset,0 12px 24px rgba(60,35,10,.35);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.board svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.board .mv{animation:slide .45s cubic-bezier(.25,.8,.3,1) both}
+@keyframes slide{0%{transform:translate(var(--dx),var(--dy)) scale(1.15)}70%{transform:scale(1.06)}100%{transform:none}}
+.board .gone{animation:pGone .4s ease-in .3s forwards}
+@keyframes pGone{to{opacity:0}}
+.board .tgc{animation:tgc 1s ease-in-out infinite}
+@keyframes tgc{50%{opacity:.25}}
+.gamebar{display:flex;gap:8px}
+.player{flex:1 1 0;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:var(--card);border:1px solid var(--line);min-width:0}
+.player.turn{border-color:var(--seal);box-shadow:0 0 0 1px var(--seal)}
+.player .pc{width:26px;height:26px;flex-shrink:0}
+.player b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player span{font-size:12px;color:var(--sub);white-space:nowrap}
+.status{min-height:22px;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.status .warn{color:var(--seal);font-weight:700}
+.spin{width:16px;height:16px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--seal);animation:spin .8s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.caps{display:flex;flex-wrap:wrap;align-items:center;gap:0;min-height:16px}.caps svg{width:16px;height:16px;margin-right:-3px}.caps em{font-style:normal;font-size:11px;color:var(--sub);margin-left:6px}
+.promo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.promo button{aspect-ratio:1;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}.promo svg{width:80%;height:80%}
+.tool{height:56px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px}
+.tool svg{width:20px;height:20px}
+.lesson-list{display:flex;flex-direction:column;gap:8px}
+.lrow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:left;width:100%}
+.lrow .no{width:30px;height:30px;border-radius:50%;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;flex-shrink:0}
+.lrow.done .no{background:var(--ok);color:#fff}
+.ltext{white-space:pre-line;font-size:15px;line-height:1.65}
+.feedback{padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.55}
+.feedback.good{background:#E3EEDF;color:#23502C}.feedback.bad{background:var(--seal-soft);color:#7D211C}
+.choice{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.result-big{font-family:var(--serif);font-weight:900;font-size:34px;text-align:center}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.score .card{align-items:center;text-align:center;gap:4px}
+.score b{font-family:var(--serif);font-size:28px}
+.hist{display:flex;flex-direction:column;border-radius:16px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+.hist div{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);font-size:13px}
+.hist div:first-child{border-top:0}
+.tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0}
+.tag.win{background:#E3EEDF;color:#23502C}.tag.lose{background:var(--seal-soft);color:#7D211C}.tag.draw{background:var(--paper2);color:var(--sub)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:12px 6px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center}
+.stat span{display:block;font-size:12px;color:var(--sub)}.stat b{font-family:var(--serif);font-size:20px}
+.dim{position:fixed;inset:0;background:rgba(30,20,10,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.dim.on{display:flex}.dim.center{align-items:center;padding:20px}
+.sheet{width:100%;max-width:520px;background:var(--paper);border-radius:22px 22px 0 0;padding:20px 16px 28px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow);max-height:92dvh;overflow:auto}
+.modal{width:100%;max-width:360px;background:var(--paper);border-radius:20px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:10px;text-align:center;box-shadow:var(--shadow)}
+.opt{min-height:56px;padding:0 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;width:100%}
+.sw{width:46px;height:26px;border-radius:13px;background:var(--line);position:relative;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.opt[aria-checked=true] .sw{background:var(--ink)}.opt[aria-checked=true] .sw::after{transform:translateX(20px)}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-20px);background:var(--ink);color:#F7EFDD;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:all .2s;pointer-events:none;z-index:30;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.big{font-family:var(--serif);font-size:22px;font-weight:900;background:var(--seal)}
+.rules p,.rules li{font-size:14px;line-height:1.65}.rules h3{font-family:var(--serif);margin:8px 0 2px;font-size:16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* PC: 판을 화면 높이에 맞춰 크게, 버튼은 오른쪽 */
+@media (min-width:900px) and (min-height:560px){
+  .app{max-width:none}
+  .screen:not(#game):not(#lesson){max-width:520px;margin:0 auto}
+  #game.on,#lesson.on{display:grid;grid-template-columns:auto 380px;grid-auto-rows:min-content;column-gap:32px;row-gap:12px;justify-content:center;align-content:center;min-height:100dvh;padding:24px}
+  #game > *,#lesson > *{grid-column:2}
+  #game > .board,#lesson > .board{grid-column:1;grid-row:1 / span 8;align-self:center}
+  #game > .board{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  #lesson > .board{width:min(calc(100dvh - 48px), calc(100vw - 480px))}
+  .tool{height:62px;font-size:13px}
+}
+
+@media (min-width:1500px) and (min-height:800px){
+  #game.on,#lesson.on{grid-template-columns:auto 456px}
+  #game > :not(.board),#lesson > :not(.board){zoom:1.2}
+  #game > .board,#lesson > .board{width:min(calc(100dvh - 48px), calc(100vw - 560px))}
+}
+</style>
+<link rel="manifest" href="../manifest.webmanifest"><link rel="icon" href="../icons/favicon.png"><link rel="apple-touch-icon" href="../icons/apple-180.png"><meta name="theme-color" content="#A8322D">
+</head>
+<body>
+<div class="app">
+
+<section class="screen on" id="home">
+  <div class="row between">
+    <div class="row" style="gap:12px"><div class="seal-mark" aria-hidden="true">棋</div>
+      <div><div class="title" style="font-size:28px">수담 체스</div><div class="muted" style="font-size:13px">왕을 지키고, 상대 왕을 몰아붙여요</div></div></div>
+    <button class="icon-btn" id="openSettings" aria-label="설정"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+  </div>
+  <div class="card"><div class="grade"><div><div class="lbl">내 기력</div><div class="g" id="myGrade">30급</div></div>
+    <div style="flex-grow:1"><div class="bar"><i id="gradeBar" style="width:0%"></i></div><div class="muted" style="font-size:12px;margin-top:6px" id="gradeTip"></div></div></div></div>
+  <button class="card" id="resume" hidden style="text-align:left;background:var(--ink);color:#F7EFDD;border-color:var(--ink)">
+    <div class="row between" style="width:100%"><span style="font-size:13px;opacity:.75">이어서 두기</span><span style="font-weight:700">계속 ▶</span></div>
+    <span id="rsInfo" style="font-family:var(--serif);font-size:17px;font-weight:700"></span></button>
+  <button class="card menu" id="goPlay"><div class="ic" id="icPlay"></div><div><b>AI와 대국</b><small>초급 · 중급 · 고급</small></div></button>
+  <button class="card menu" id="goLearn"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h7a3 3 0 013 3v12a2 2 0 00-2-2H3z"/><path d="M21 5h-7a3 3 0 00-3 3v12a2 2 0 012-2h8z"/></svg></div><div><b>체스 배우기</b><small id="learnInfo"></small></div></button>
+  <button class="card menu" id="goPvp"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2A1E14" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div><div><b>둘이서 두기</b><small>한 기기로 번갈아 두기</small></div></button>
+  <button class="card menu" id="goOnline" hidden><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A8322D" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9M12 3c-2.5 2.7-3.8 5.7-3.8 9s1.3 6.3 3.8 9"/></svg></div><div><b>온라인 대전</b><small>방 만들기 · 번호로 들어가기 · 열린 방</small></div></button>
+  <div class="row" style="gap:8px"><button class="btn plain" id="goRecords">기록</button><button class="btn plain" id="goRules">규칙·기력 안내</button></div>
+</section>
+
+<section class="screen" id="game" style="gap:10px">
+  <div class="row between">
+    <button class="icon-btn" id="gHome" aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button>
+    <div class="title" id="gTitle" style="font-size:18px">AI 대국</div>
+    <div class="muted" id="gMove" style="font-size:13px;width:44px;text-align:right">0수</div>
+  </div>
+  <div class="nt-bar" id="netBar" hidden></div>
+  <div class="gamebar">
+    <div class="player" id="pTop"><svg class="pc" id="pcTop" viewBox="0 0 45 45"></svg><div style="min-width:0;flex-grow:1"><b id="nTop">AI</b><div class="caps" id="cTop"></div></div></div>
+    <div class="player" id="pBot"><svg class="pc" id="pcBot" viewBox="0 0 45 45"></svg><div style="min-width:0;flex-grow:1"><b id="nBot">나</b><div class="caps" id="cBot"></div></div></div>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="status"><span id="gStatus"></span><span id="think" hidden><span class="spin"></span> <span class="muted" style="font-size:13px">생각 중</span></span></div>
+  <div class="tools">
+    <button class="tool" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>무르기</button>
+    <button class="tool" id="hintBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>힌트</button>
+    <button class="tool" id="drawBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 11l3-3 4 4 3-3M4 15h16M4 19h16"/></svg>무승부 제안</button>
+    <button class="tool" id="resignBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>기권</button>
+  </div>
+</section>
+
+<section class="screen" id="result">
+  <div class="row"><button class="icon-btn" data-home aria-label="홈으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg></button></div>
+  <div class="result-big" id="rTitle" style="margin-top:10px"></div>
+  <div class="muted" id="rSub" style="text-align:center;font-size:14px"></div>
+  <div class="card" id="rGrade" hidden style="align-items:center;text-align:center"></div>
+  <div class="board" id="rBoard" style="width:72%;align-self:center"></div>
+  <div style="flex-grow:1"></div>
+  <button class="btn ink" id="rAgain">한 판 더</button>
+  <button class="btn plain" data-home>홈으로</button>
+</section>
+
+<section class="screen" id="learn">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">체스 배우기</span></div>
+  <p class="muted" style="margin:0;font-size:14px">완전 처음이어도 괜찮아요. 말을 직접 움직이며 배워요.</p>
+  <div class="lesson-list" id="lessonList"></div>
+</section>
+
+<section class="screen" id="lesson" style="gap:12px">
+  <div class="row between"><button class="icon-btn" id="lBack" aria-label="목록으로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="title" id="lTitle" style="font-size:19px"></span><span class="muted" id="lNo" style="font-size:13px;width:44px;text-align:right"></span></div>
+  <div class="ltext" id="lText"></div>
+  <div class="board" id="lBoard"></div>
+  <div class="feedback" id="lFeed" hidden></div>
+  <div class="row" style="gap:8px"><button class="btn plain" id="lRetry">다시 하기</button><button class="btn ink" id="lNext">다음 강</button></div>
+</section>
+
+<section class="screen" id="records">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">기록</span></div>
+  <div id="recBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<section class="screen" id="rules">
+  <div class="row" style="gap:12px"><button class="icon-btn" data-home aria-label="뒤로"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="title" style="font-size:22px">규칙·기력 안내</span></div>
+  <div class="card rules">
+    <h3>이기는 법</h3><p>상대 킹이 체크를 피할 방법이 없게 만들면(체크메이트) 이겨요. 상대가 기권하거나 시간이 다 돼도 이겨요.</p>
+    <h3>말 움직임</h3><ul><li><b>킹</b> 모든 방향 한 칸 · <b>퀸</b> 8방향 쭉 · <b>룩</b> 가로·세로 쭉 · <b>비숍</b> 대각선 쭉</li><li><b>나이트</b> ㄱ자 (말을 뛰어넘음) · <b>폰</b> 앞으로 한 칸(처음엔 두 칸), 잡을 땐 대각선 앞</li></ul>
+    <h3>특별한 수</h3><ul><li><b>캐슬링</b> — 킹이 룩 쪽으로 두 칸, 룩이 킹 옆으로</li><li><b>앙파상</b> — 두 칸 온 상대 폰을 바로 다음 수에 지나간 칸에서 잡기</li><li><b>프로모션</b> — 끝 줄에 간 폰은 퀸·룩·비숍·나이트로 바뀜</li></ul>
+    <h3>무승부</h3><ul><li>스테일메이트(체크가 아닌데 둘 수 있는 수가 없음)</li><li>같은 장면이 세 번 반복 · 50수 동안 잡기도 폰 움직임도 없음 · 메이트할 말이 모자람</li><li>무승부 제안을 상대가 받아들임 (AI는 판이 비슷할 때만 받아요)</li></ul>
+    <h3>AI 단계와 기력</h3><ul><li><b>초급</b> — 30~19급. 말 움직임을 막 익힌 분께.</li><li><b>중급</b> — 18~11급. 기본 전술을 아는 분께.</li><li><b>고급</b> — 10급 이상을 목표로 한 상대. 여러 수 앞을 깊게 읽어요.</li></ul>
+    <h3>내 기력 오르는 법</h3><ul><li>30급에서 시작해서, 이기면 1급씩 올라요.</li><li>초급 상대로는 19급까지, 중급은 11급까지, 고급은 1단까지 오를 수 있어요.</li><li>내 기력보다 약한 단계에 지면 1급 내려가요. 무르기·힌트를 쓴 판은 이겨도 안 올라요.</li></ul>
+  </div>
+</section>
+</div>
+
+<div class="dim" id="setup" role="dialog" aria-modal="true" aria-label="대국 설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">대국 설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <span class="lbl">AI 단계</span>
+    <div class="chips" id="sLevel"><button data-v="0">초급<small>30~19급</small></button><button data-v="1">중급<small>18~11급</small></button><button data-v="2">고급<small>10급~</small></button></div>
+    <span class="lbl">내 색</span>
+    <div class="chips" id="sSide"><button data-v="0">백 (먼저)</button><button data-v="1">흑</button><button data-v="2">무작위</button></div>
+    <button class="btn ink" id="startGame">대국 시작</button>
+  </div>
+</div>
+<div class="dim" id="settings" role="dialog" aria-modal="true" aria-label="설정">
+  <div class="sheet">
+    <div class="row between"><span class="title" style="font-size:20px">설정</span><button class="icon-btn" data-close aria-label="닫기">✕</button></div>
+    <button class="opt" role="switch" data-set="sound"><span>말 놓는 소리</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="showMoves"><span>갈 수 있는 자리 표시</span><span class="sw"></span></button>
+    <button class="opt" role="switch" data-set="coords"><span>좌표 표시</span><span class="sw"></span></button>
+  </div>
+</div>
+<div class="dim center" id="promoModal" role="dialog" aria-modal="true" aria-label="프로모션">
+  <div class="modal"><span class="title" style="font-size:19px">무엇으로 바꿀까요?</span><div class="promo" id="promoBox"></div><button class="btn plain" data-close>취소</button></div>
+</div>
+<div class="dim center" id="askModal" role="dialog" aria-modal="true">
+  <div class="modal"><span class="title" style="font-size:19px" id="askTitle"></span><span class="muted" id="askText" style="font-size:14px;margin-bottom:6px"></span>
+    <button class="btn ink" id="askYes">확인</button><button class="btn plain" data-close>취소</button></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../net.js"></script>
+<script>
+// 체스 엔진: 규칙 + AI (화면과 분리, 워커에서도 동작)
+(function (root) {
+'use strict';
+const P = 1, N = 2, B = 3, R = 4, Q = 5, K = 6, BLACK = 8;
+const WHITE_SIDE = 0, BLACK_SIDE = 1;
+const FL_EP = 1, FL_CASTLE = 2, FL_DOUBLE = 4;
+const sq = (f, r) => (r << 4) | f;           // 0x88: f 0..7 (a..h), r 0..7 (1..8)
+const fileOf = s => s & 7, rankOf = s => s >> 4;
+const onB = s => (s & 0x88) === 0;
+const color = p => (p & 8) ? 1 : 0, type = p => p & 7;
+const mk = (side, t) => t | (side ? BLACK : 0);
+const NAME = { 1: '폰', 2: '나이트', 3: '비숍', 4: '룩', 5: '퀸', 6: '킹' };
+const LET = 'PNBRQK';
+const KN = [33, 31, 18, 14, -33, -31, -18, -14], KG = [1, -1, 16, -16, 17, 15, -17, -15];
+const DIAG = [17, 15, -17, -15], ORTH = [1, -1, 16, -16];
+// 수: from | to<<7 | promo<<14 | flags<<17
+const M = (f, t, pr, fl) => f | (t << 7) | ((pr || 0) << 14) | ((fl || 0) << 17);
+const mFrom = m => m & 127, mTo = m => (m >> 7) & 127, mPromo = m => (m >> 14) & 7, mFlags = m => (m >> 17) & 7;
+// 지브리스트 해시 (반복 판정·AI)
+let seed = 1234567;
+const rnd32 = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed; };
+const ZP = []; for (let i = 0; i < 16 * 128; i++) ZP.push(rnd32());
+const ZSIDE = rnd32(), ZC = [rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32()], ZEP = []; for (let i = 0; i < 8; i++) ZEP.push(rnd32());
+
+function emptyPos() { return { b: new Int8Array(128), turn: 0, castle: 0, ep: -1, half: 0, full: 1, kings: [-1, -1], hist: [], keys: [] }; }
+function fromFEN(fen) {
+  const p = emptyPos(), [pl, tn, cs, ep, hf, fu] = fen.trim().split(/\s+/);
+  let r = 7, f = 0;
+  for (const ch of pl) {
+    if (ch === '/') { r--; f = 0; continue; }
+    if (/\d/.test(ch)) { f += +ch; continue; }
+    const t = LET.indexOf(ch.toUpperCase()) + 1, s = sq(f, r);
+    p.b[s] = mk(ch === ch.toUpperCase() ? 0 : 1, t); if (t === K) p.kings[ch === ch.toUpperCase() ? 0 : 1] = s; f++;
+  }
+  p.turn = tn === 'b' ? 1 : 0;
+  p.castle = (cs || '-').split('').reduce((a, c) => a | ({ K: 1, Q: 2, k: 4, q: 8 }[c] || 0), 0);
+  p.ep = ep && ep !== '-' ? sq(ep.charCodeAt(0) - 97, +ep[1] - 1) : -1;
+  p.half = +(hf || 0); p.full = +(fu || 1);
+  p.key = hash(p); p.keys = [p.key];
+  return p;
+}
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+function newPosition() { return fromFEN(START); }
+function toFEN(p) {
+  let s = '';
+  for (let r = 7; r >= 0; r--) { let e = 0; for (let f = 0; f < 8; f++) { const x = p.b[sq(f, r)]; if (!x) { e++; continue; } if (e) { s += e; e = 0; } const c = LET[type(x) - 1]; s += color(x) ? c.toLowerCase() : c; } if (e) s += e; if (r) s += '/'; }
+  const cs = (p.castle & 1 ? 'K' : '') + (p.castle & 2 ? 'Q' : '') + (p.castle & 4 ? 'k' : '') + (p.castle & 8 ? 'q' : '');
+  return s + ' ' + (p.turn ? 'b' : 'w') + ' ' + (cs || '-') + ' ' + (p.ep >= 0 ? sqName(p.ep) : '-') + ' ' + p.half + ' ' + p.full;
+}
+function hash(p) {
+  let h = 0;
+  for (let s = 0; s < 128; s++) { if (!onB(s) || !p.b[s]) continue; h ^= ZP[(p.b[s] & 15) * 128 + s]; }
+  if (p.turn) h ^= ZSIDE; h ^= ZC[p.castle]; if (p.ep >= 0) h ^= ZEP[fileOf(p.ep)];
+  return h >>> 0;
+}
+const sqName = s => String.fromCharCode(97 + fileOf(s)) + (rankOf(s) + 1);
+
+function attacked(p, s, by) { // by 쪽 말이 s를 공격하나
+  const b = p.b;
+  const pd = by ? 1 : -1; // 흑 폰은 위(+16)에서 아래로 공격
+  for (const d of [15, 17]) { const t = s + (by ? d : -d); if (onB(t) && b[t] === mk(by, P)) return true; }
+  for (const d of KN) { const t = s + d; if (onB(t) && b[t] === mk(by, N)) return true; }
+  for (const d of KG) { const t = s + d; if (onB(t) && b[t] === mk(by, K)) return true; }
+  for (const d of DIAG) { let t = s + d; while (onB(t)) { const x = b[t]; if (x) { if (color(x) === by && (type(x) === B || type(x) === Q)) return true; break; } t += d; } }
+  for (const d of ORTH) { let t = s + d; while (onB(t)) { const x = b[t]; if (x) { if (color(x) === by && (type(x) === R || type(x) === Q)) return true; break; } t += d; } }
+  return pd && false;
+}
+const inCheck = (p, side) => p.kings[side] >= 0 && attacked(p, p.kings[side], 1 - side);
+
+function genPseudo(p, capsOnly) {
+  const out = [], b = p.b, us = p.turn, them = 1 - us;
+  for (let s = 0; s < 128; s++) {
+    if (!onB(s)) { s += 7; continue; }
+    const x = b[s]; if (!x || color(x) !== us) continue;
+    const t = type(x);
+    if (t === P) {
+      const fw = us ? -16 : 16, startR = us ? 6 : 1, lastR = us ? 0 : 7;
+      const one = s + fw;
+      if (!capsOnly && onB(one) && !b[one]) {
+        if (rankOf(one) === lastR) for (const pr of [Q, R, B, N]) out.push(M(s, one, pr));
+        else { out.push(M(s, one)); const two = one + fw; if (rankOf(s) === startR && !b[two]) out.push(M(s, two, 0, FL_DOUBLE)); }
+      }
+      for (const d of [fw - 1, fw + 1]) {
+        const c = s + d; if (!onB(c)) continue;
+        if (b[c] && color(b[c]) === them) { if (rankOf(c) === lastR) for (const pr of [Q, R, B, N]) out.push(M(s, c, pr)); else out.push(M(s, c)); }
+        else if (c === p.ep) out.push(M(s, c, 0, FL_EP));
+      }
+      if (capsOnly) { const one2 = s + fw; if (onB(one2) && !b[one2] && rankOf(one2) === lastR) out.push(M(s, one2, Q)); }
+      continue;
+    }
+    if (t === N || t === K) {
+      for (const d of (t === N ? KN : KG)) { const c = s + d; if (!onB(c)) continue; const y = b[c]; if (y && color(y) === us) continue; if (capsOnly && !y) continue; out.push(M(s, c)); }
+      if (t === K && !capsOnly) { // 캐슬링
+        const home = us ? 0x74 : 0x04;
+        if (s === home && !attacked(p, s, them)) {
+          const ks = us ? 4 : 1, qs = us ? 8 : 2;
+          if ((p.castle & ks) && !b[s + 1] && !b[s + 2] && b[s + 3] === mk(us, R) && !attacked(p, s + 1, them) && !attacked(p, s + 2, them)) out.push(M(s, s + 2, 0, FL_CASTLE));
+          if ((p.castle & qs) && !b[s - 1] && !b[s - 2] && !b[s - 3] && b[s - 4] === mk(us, R) && !attacked(p, s - 1, them) && !attacked(p, s - 2, them)) out.push(M(s, s - 2, 0, FL_CASTLE));
+        }
+      }
+      continue;
+    }
+    const dirs = t === B ? DIAG : t === R ? ORTH : KG;
+    for (const d of dirs) { let c = s + d; while (onB(c)) { const y = b[c]; if (y) { if (color(y) !== us) out.push(M(s, c)); break; } if (!capsOnly) out.push(M(s, c)); c += d; } }
+  }
+  return out;
+}
+const CASTLE_MASK = new Uint8Array(128).fill(15);
+CASTLE_MASK[0x00] = 15 & ~2; CASTLE_MASK[0x07] = 15 & ~1; CASTLE_MASK[0x04] = 15 & ~3;
+CASTLE_MASK[0x70] = 15 & ~8; CASTLE_MASK[0x77] = 15 & ~4; CASTLE_MASK[0x74] = 15 & ~12;
+function makeMove(p, m) {
+  const f = mFrom(m), t = mTo(m), fl = mFlags(m), pr = mPromo(m), b = p.b, x = b[f], us = p.turn;
+  let cap = b[t], capSq = t;
+  if (fl & FL_EP) { capSq = t + (us ? 16 : -16); cap = b[capSq]; b[capSq] = 0; }
+  p.hist.push({ m, cap, castle: p.castle, ep: p.ep, half: p.half, key: p.key });
+  b[t] = pr ? mk(us, pr) : x; b[f] = 0;
+  if (fl & FL_CASTLE) { if (t > f) { b[f + 1] = b[f + 3]; b[f + 3] = 0; } else { b[f - 1] = b[f - 4]; b[f - 4] = 0; } }
+  if (type(x) === K) p.kings[us] = t;
+  p.castle &= CASTLE_MASK[f] & CASTLE_MASK[t];
+  p.ep = (fl & FL_DOUBLE) ? (f + t) >> 1 : -1;
+  p.half = (type(x) === P || cap) ? 0 : p.half + 1;
+  if (us) p.full++;
+  p.turn = 1 - us;
+  p.key = hash(p); p.keys.push(p.key);
+  return cap;
+}
+function undoMove(p) {
+  const h = p.hist.pop(); if (!h) return;
+  const m = h.m, f = mFrom(m), t = mTo(m), fl = mFlags(m), pr = mPromo(m), b = p.b;
+  p.turn = 1 - p.turn; const us = p.turn;
+  const x = b[t];
+  b[f] = pr ? mk(us, P) : x; b[t] = 0;
+  if (fl & FL_EP) b[t + (us ? 16 : -16)] = h.cap; else b[t] = h.cap;
+  if (fl & FL_CASTLE) { if (t > f) { b[f + 3] = b[f + 1]; b[f + 1] = 0; } else { b[f - 4] = b[f - 1]; b[f - 1] = 0; } }
+  if (type(b[f]) === K) p.kings[us] = f;
+  p.castle = h.castle; p.ep = h.ep; p.half = h.half; if (us) p.full--;
+  p.key = h.key; p.keys.pop();
+}
+function legalMoves(p) {
+  const out = [], us = p.turn;
+  for (const m of genPseudo(p)) { makeMove(p, m); if (!inCheck(p, us)) out.push(m); undoMove(p); }
+  return out;
+}
+function insufficient(p) {
+  const pcs = []; for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (x && type(x) !== K) pcs.push({ t: type(x), s }); }
+  if (!pcs.length) return true;
+  if (pcs.length === 1 && (pcs[0].t === N || pcs[0].t === B)) return true;
+  if (pcs.every(q => q.t === B)) { const c = pcs.map(q => (fileOf(q.s) + rankOf(q.s)) & 1); return c.every(v => v === c[0]); }
+  return false;
+}
+function repetitions(p) { let n = 0; for (let i = p.keys.length - 1; i >= 0 && i >= p.keys.length - 1 - p.half; i -= 2) if (p.keys[i] === p.key) n++; return n; }
+// 'play' | 'mate' | 'stalemate' | 'fifty' | 'repeat' | 'material'
+function status(p) {
+  if (!legalMoves(p).length) return inCheck(p, p.turn) ? 'mate' : 'stalemate';
+  if (insufficient(p)) return 'material';
+  if (p.half >= 100) return 'fifty';
+  if (repetitions(p) >= 3) return 'repeat';
+  return 'play';
+}
+function san(p, m) { // 기보 표기
+  const f = mFrom(m), t = mTo(m), x = p.b[f], tp = type(x), fl = mFlags(m);
+  let s;
+  if (fl & FL_CASTLE) s = t > f ? 'O-O' : 'O-O-O';
+  else {
+    const cap = p.b[t] || (fl & FL_EP);
+    if (tp === P) s = (cap ? sqName(f)[0] + 'x' : '') + sqName(t) + (mPromo(m) ? '=' + LET[mPromo(m) - 1] : '');
+    else {
+      const others = legalMoves(p).filter(o => o !== m && mTo(o) === t && p.b[mFrom(o)] === x);
+      let dis = ''; if (others.length) { const sameF = others.some(o => fileOf(mFrom(o)) === fileOf(f)), sameR = others.some(o => rankOf(mFrom(o)) === rankOf(f)); dis = !sameF ? sqName(f)[0] : !sameR ? sqName(f)[1] : sqName(f); }
+      s = LET[tp - 1] + dis + (cap ? 'x' : '') + sqName(t);
+    }
+  }
+  makeMove(p, m); const st = status(p); const chk = inCheck(p, p.turn); undoMove(p);
+  return s + (st === 'mate' ? '#' : chk ? '+' : '');
+}
+
+// ---------- 평가 ----------
+const VAL = [0, 100, 320, 330, 500, 900, 0];
+// 말 위치 점수 (백 기준, a8부터 h1 순서로 적은 표)
+const PST = {
+  1: [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],
+  2: [-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50],
+  3: [-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10, -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20],
+  4: [0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0],
+  5: [-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20],
+  6: [-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20],
+  7: [-50,-40,-30,-20,-20,-30,-40,-50, -30,-20,-10,0,0,-10,-20,-30, -30,-10,20,30,30,20,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,20,30,30,20,-10,-30, -30,-30,0,0,0,0,-30,-30, -50,-30,-30,-30,-30,-30,-30,-50]
+};
+const pstAt = (t, side, s) => { const f = fileOf(s), r = rankOf(s); const idx = side ? (r * 8 + f) : ((7 - r) * 8 + f); return PST[t][idx]; };
+function evaluate(p) { // 둘 차례 기준 점수
+  let mat = [0, 0], pos = [0, 0], minor = 0;
+  for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (!x) continue; const t = type(x), c = color(x); if (t !== K && t !== P) minor += VAL[t]; mat[c] += VAL[t]; }
+  const endgame = minor <= 1300;
+  for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (!x) continue; const t = type(x), c = color(x); pos[c] += pstAt(t === K && endgame ? 7 : t, c, s); }
+  // 끝내기: 이기는 쪽 킹으로 상대 킹 몰기
+  let extra = 0;
+  if (endgame) { const lead = mat[0] - mat[1]; if (Math.abs(lead) >= 300) { const w = lead > 0 ? 0 : 1, l = 1 - w, lk = p.kings[l], wk = p.kings[w];
+    if (lk >= 0 && wk >= 0) { const cd = Math.max(3 - fileOf(lk), fileOf(lk) - 4) + Math.max(3 - rankOf(lk), rankOf(lk) - 4); const kd = Math.abs(fileOf(lk) - fileOf(wk)) + Math.abs(rankOf(lk) - rankOf(wk));
+      extra = (cd * 10 + (14 - kd) * 4) * (w === 0 ? 1 : -1); } } }
+  const sc = mat[0] - mat[1] + pos[0] - pos[1] + extra;
+  return p.turn ? -sc : sc;
+}
+// ---------- 탐색 ----------
+const MATE = 100000;
+function search(p0, opts) {
+  const p = { b: p0.b.slice(), turn: p0.turn, castle: p0.castle, ep: p0.ep, half: p0.half, full: p0.full, kings: p0.kings.slice(), hist: [], keys: (p0.keys || []).slice() };
+  p.key = hash(p); if (!p.keys.length) p.keys.push(p.key);
+  const deadline = Date.now() + (opts.timeMs || 1000), maxD = opts.depth || 64;
+  const TT = new Map(), killers = [], hist = new Int32Array(128 * 128);
+  let nodes = 0, stop = false, best = 0, bestScore = 0;
+  // 약한 단계: 판마다 정해진 작은 오차를 섞어 '감'이 조금 흐린 평가 (탐색은 그대로 일관됨)
+  const salt = (Math.random() * 4294967295) >>> 0, NZ = opts.noise || 0;
+  const ev = () => { let e = evaluate(p); if (NZ){ let h = (p.key ^ salt) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0; h = (h ^ (h >>> 13)) >>> 0; e += ((h % 2001) / 1000 - 1) * NZ; } return e; };
+  const order = (moves, ttm, ply) => {
+    const sc = moves.map(m => { if (m === ttm) return 1e7; const t = mTo(m), cap = p.b[t] || ((mFlags(m) & FL_EP) ? 1 : 0); if (cap) return 1e6 + VAL[type(cap) || 1] * 10 - VAL[type(p.b[mFrom(m)])] / 10; if (mPromo(m)) return 9e5;
+      const k = killers[ply]; if (k && (k[0] === m || k[1] === m)) return 8e5; return hist[mFrom(m) * 128 + t]; });
+    const idx = moves.map((_, i) => i).sort((a, b) => sc[b] - sc[a]); return idx.map(i => moves[i]);
+  };
+  function qs(alpha, beta, d) {
+    if (++nodes % 2048 === 0 && Date.now() > deadline) stop = true;
+    const st = ev(); if (st >= beta) return st; if (st > alpha) alpha = st; if (d > 8) return st;
+    const us = p.turn;
+    for (const m of order(genPseudo(p, true), 0, 63)) {
+      makeMove(p, m); if (inCheck(p, us)) { undoMove(p); continue; }
+      const v = -qs(-beta, -alpha, d + 1); undoMove(p); if (stop) return 0;
+      if (v >= beta) return v; if (v > alpha) alpha = v;
+    }
+    return alpha;
+  }
+  function ab(depth, alpha, beta, ply) {
+    if (++nodes % 2048 === 0 && Date.now() > deadline) stop = true;
+    if (stop) return 0;
+    if (ply && (p.half >= 100 || repetitions(p) >= 2)) return 0;
+    const us = p.turn, chk = inCheck(p, us);
+    if (chk) depth++;
+    if (depth <= 0) return qs(alpha, beta, 0);
+    const te = TT.get(p.key); let ttm = 0;
+    if (te) { ttm = te.m; if (ply && te.d >= depth) { if (te.f === 0) return te.v; if (te.f === 1 && te.v >= beta) return te.v; if (te.f === 2 && te.v <= alpha) return te.v; } }
+    const a0 = alpha; let bestV = -Infinity, bm = 0, legal = 0;
+    for (const m of order(genPseudo(p), ttm, ply)) {
+      makeMove(p, m); if (inCheck(p, us)) { undoMove(p); continue; }
+      legal++;
+      let v;
+      if (legal > 4 && depth >= 3 && !chk && !p.b[mTo(m)] && !mPromo(m) && !inCheck(p, p.turn)) { v = -ab(depth - 2, -alpha - 1, -alpha, ply + 1); if (v > alpha) v = -ab(depth - 1, -beta, -alpha, ply + 1); }
+      else v = -ab(depth - 1, -beta, -alpha, ply + 1);
+      undoMove(p); if (stop) return 0;
+      if (v > bestV) { bestV = v; bm = m; }
+      if (v > alpha) { alpha = v; if (ply === 0) { best = m; bestScore = v; } }
+      if (alpha >= beta) { if (!p.b[mTo(m)]) { const k = killers[ply] || (killers[ply] = [0, 0]); if (k[0] !== m) { k[1] = k[0]; k[0] = m; } hist[mFrom(m) * 128 + mTo(m)] += depth * depth; } break; }
+    }
+    if (!legal) return chk ? -MATE + ply : 0;
+    TT.set(p.key, { d: depth, v: bestV, m: bm, f: bestV <= a0 ? 2 : bestV >= beta ? 1 : 0 });
+    return bestV;
+  }
+  const rootMoves = legalMoves(p);
+  if (!rootMoves.length) return { move: 0, score: 0, depth: 0 };
+  best = rootMoves[0]; let done = 0, finalBest = best, finalScore = 0;
+  for (let d = 1; d <= maxD; d++) {
+    best = finalBest; const v = ab(d, -Infinity, Infinity, 0);
+    if (stop) break;
+    finalBest = best; finalScore = v; done = d;
+    if (Math.abs(v) > MATE - 100) break;
+    if (Date.now() > deadline - (opts.timeMs || 1000) * 0.45) break; // 다음 깊이를 다 못 볼 것 같으면 멈춤
+  }
+  return { move: finalBest, score: finalScore, depth: done, nodes };
+}
+const LEVEL = [{ depth: 2, timeMs: 400, noise: 140 }, { depth: 4, timeMs: 1200, noise: 30 }, { depth: 64, timeMs: 2600, noise: 0 }];
+function aiMove(p, level) {
+  const L = LEVEL[level] || LEVEL[1];
+  if (!legalMoves(p).length) return { move: 0 };
+  return { move: search(p, L).move };
+}
+function perft(p, d) { if (!d) return 1; let n = 0; for (const m of legalMoves(p)) { makeMove(p, m); n += perft(p, d - 1); undoMove(p); } return n; }
+root.CH = { P, N, B, R, Q, K, BLACK, M, mFrom, mTo, mPromo, mFlags, FL_EP, FL_CASTLE, FL_DOUBLE, sq, fileOf, rankOf, onB, color, type, mk, NAME, VAL,
+  newPosition, fromFEN, toFEN, START, legalMoves, makeMove, undoMove, inCheck, attacked, status, san, sqName, search, aiMove, evaluate, perft, LEVEL, hash, repetitions };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+window.CH_SRC = "// \uccb4\uc2a4 \uc5d4\uc9c4: \uaddc\uce59 + AI (\ud654\uba74\uacfc \ubd84\ub9ac, \uc6cc\ucee4\uc5d0\uc11c\ub3c4 \ub3d9\uc791)\n(function (root) {\n'use strict';\nconst P = 1, N = 2, B = 3, R = 4, Q = 5, K = 6, BLACK = 8;\nconst WHITE_SIDE = 0, BLACK_SIDE = 1;\nconst FL_EP = 1, FL_CASTLE = 2, FL_DOUBLE = 4;\nconst sq = (f, r) => (r << 4) | f;           // 0x88: f 0..7 (a..h), r 0..7 (1..8)\nconst fileOf = s => s & 7, rankOf = s => s >> 4;\nconst onB = s => (s & 0x88) === 0;\nconst color = p => (p & 8) ? 1 : 0, type = p => p & 7;\nconst mk = (side, t) => t | (side ? BLACK : 0);\nconst NAME = { 1: '\ud3f0', 2: '\ub098\uc774\ud2b8', 3: '\ube44\uc20d', 4: '\ub8e9', 5: '\ud038', 6: '\ud0b9' };\nconst LET = 'PNBRQK';\nconst KN = [33, 31, 18, 14, -33, -31, -18, -14], KG = [1, -1, 16, -16, 17, 15, -17, -15];\nconst DIAG = [17, 15, -17, -15], ORTH = [1, -1, 16, -16];\n// \uc218: from | to<<7 | promo<<14 | flags<<17\nconst M = (f, t, pr, fl) => f | (t << 7) | ((pr || 0) << 14) | ((fl || 0) << 17);\nconst mFrom = m => m & 127, mTo = m => (m >> 7) & 127, mPromo = m => (m >> 14) & 7, mFlags = m => (m >> 17) & 7;\n// \uc9c0\ube0c\ub9ac\uc2a4\ud2b8 \ud574\uc2dc (\ubc18\ubcf5 \ud310\uc815\u00b7AI)\nlet seed = 1234567;\nconst rnd32 = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed; };\nconst ZP = []; for (let i = 0; i < 16 * 128; i++) ZP.push(rnd32());\nconst ZSIDE = rnd32(), ZC = [rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32(), rnd32()], ZEP = []; for (let i = 0; i < 8; i++) ZEP.push(rnd32());\n\nfunction emptyPos() { return { b: new Int8Array(128), turn: 0, castle: 0, ep: -1, half: 0, full: 1, kings: [-1, -1], hist: [], keys: [] }; }\nfunction fromFEN(fen) {\n  const p = emptyPos(), [pl, tn, cs, ep, hf, fu] = fen.trim().split(/\\s+/);\n  let r = 7, f = 0;\n  for (const ch of pl) {\n    if (ch === '/') { r--; f = 0; continue; }\n    if (/\\d/.test(ch)) { f += +ch; continue; }\n    const t = LET.indexOf(ch.toUpperCase()) + 1, s = sq(f, r);\n    p.b[s] = mk(ch === ch.toUpperCase() ? 0 : 1, t); if (t === K) p.kings[ch === ch.toUpperCase() ? 0 : 1] = s; f++;\n  }\n  p.turn = tn === 'b' ? 1 : 0;\n  p.castle = (cs || '-').split('').reduce((a, c) => a | ({ K: 1, Q: 2, k: 4, q: 8 }[c] || 0), 0);\n  p.ep = ep && ep !== '-' ? sq(ep.charCodeAt(0) - 97, +ep[1] - 1) : -1;\n  p.half = +(hf || 0); p.full = +(fu || 1);\n  p.key = hash(p); p.keys = [p.key];\n  return p;\n}\nconst START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';\nfunction newPosition() { return fromFEN(START); }\nfunction toFEN(p) {\n  let s = '';\n  for (let r = 7; r >= 0; r--) { let e = 0; for (let f = 0; f < 8; f++) { const x = p.b[sq(f, r)]; if (!x) { e++; continue; } if (e) { s += e; e = 0; } const c = LET[type(x) - 1]; s += color(x) ? c.toLowerCase() : c; } if (e) s += e; if (r) s += '/'; }\n  const cs = (p.castle & 1 ? 'K' : '') + (p.castle & 2 ? 'Q' : '') + (p.castle & 4 ? 'k' : '') + (p.castle & 8 ? 'q' : '');\n  return s + ' ' + (p.turn ? 'b' : 'w') + ' ' + (cs || '-') + ' ' + (p.ep >= 0 ? sqName(p.ep) : '-') + ' ' + p.half + ' ' + p.full;\n}\nfunction hash(p) {\n  let h = 0;\n  for (let s = 0; s < 128; s++) { if (!onB(s) || !p.b[s]) continue; h ^= ZP[(p.b[s] & 15) * 128 + s]; }\n  if (p.turn) h ^= ZSIDE; h ^= ZC[p.castle]; if (p.ep >= 0) h ^= ZEP[fileOf(p.ep)];\n  return h >>> 0;\n}\nconst sqName = s => String.fromCharCode(97 + fileOf(s)) + (rankOf(s) + 1);\n\nfunction attacked(p, s, by) { // by \ucabd \ub9d0\uc774 s\ub97c \uacf5\uaca9\ud558\ub098\n  const b = p.b;\n  const pd = by ? 1 : -1; // \ud751 \ud3f0\uc740 \uc704(+16)\uc5d0\uc11c \uc544\ub798\ub85c \uacf5\uaca9\n  for (const d of [15, 17]) { const t = s + (by ? d : -d); if (onB(t) && b[t] === mk(by, P)) return true; }\n  for (const d of KN) { const t = s + d; if (onB(t) && b[t] === mk(by, N)) return true; }\n  for (const d of KG) { const t = s + d; if (onB(t) && b[t] === mk(by, K)) return true; }\n  for (const d of DIAG) { let t = s + d; while (onB(t)) { const x = b[t]; if (x) { if (color(x) === by && (type(x) === B || type(x) === Q)) return true; break; } t += d; } }\n  for (const d of ORTH) { let t = s + d; while (onB(t)) { const x = b[t]; if (x) { if (color(x) === by && (type(x) === R || type(x) === Q)) return true; break; } t += d; } }\n  return pd && false;\n}\nconst inCheck = (p, side) => p.kings[side] >= 0 && attacked(p, p.kings[side], 1 - side);\n\nfunction genPseudo(p, capsOnly) {\n  const out = [], b = p.b, us = p.turn, them = 1 - us;\n  for (let s = 0; s < 128; s++) {\n    if (!onB(s)) { s += 7; continue; }\n    const x = b[s]; if (!x || color(x) !== us) continue;\n    const t = type(x);\n    if (t === P) {\n      const fw = us ? -16 : 16, startR = us ? 6 : 1, lastR = us ? 0 : 7;\n      const one = s + fw;\n      if (!capsOnly && onB(one) && !b[one]) {\n        if (rankOf(one) === lastR) for (const pr of [Q, R, B, N]) out.push(M(s, one, pr));\n        else { out.push(M(s, one)); const two = one + fw; if (rankOf(s) === startR && !b[two]) out.push(M(s, two, 0, FL_DOUBLE)); }\n      }\n      for (const d of [fw - 1, fw + 1]) {\n        const c = s + d; if (!onB(c)) continue;\n        if (b[c] && color(b[c]) === them) { if (rankOf(c) === lastR) for (const pr of [Q, R, B, N]) out.push(M(s, c, pr)); else out.push(M(s, c)); }\n        else if (c === p.ep) out.push(M(s, c, 0, FL_EP));\n      }\n      if (capsOnly) { const one2 = s + fw; if (onB(one2) && !b[one2] && rankOf(one2) === lastR) out.push(M(s, one2, Q)); }\n      continue;\n    }\n    if (t === N || t === K) {\n      for (const d of (t === N ? KN : KG)) { const c = s + d; if (!onB(c)) continue; const y = b[c]; if (y && color(y) === us) continue; if (capsOnly && !y) continue; out.push(M(s, c)); }\n      if (t === K && !capsOnly) { // \uce90\uc2ac\ub9c1\n        const home = us ? 0x74 : 0x04;\n        if (s === home && !attacked(p, s, them)) {\n          const ks = us ? 4 : 1, qs = us ? 8 : 2;\n          if ((p.castle & ks) && !b[s + 1] && !b[s + 2] && b[s + 3] === mk(us, R) && !attacked(p, s + 1, them) && !attacked(p, s + 2, them)) out.push(M(s, s + 2, 0, FL_CASTLE));\n          if ((p.castle & qs) && !b[s - 1] && !b[s - 2] && !b[s - 3] && b[s - 4] === mk(us, R) && !attacked(p, s - 1, them) && !attacked(p, s - 2, them)) out.push(M(s, s - 2, 0, FL_CASTLE));\n        }\n      }\n      continue;\n    }\n    const dirs = t === B ? DIAG : t === R ? ORTH : KG;\n    for (const d of dirs) { let c = s + d; while (onB(c)) { const y = b[c]; if (y) { if (color(y) !== us) out.push(M(s, c)); break; } if (!capsOnly) out.push(M(s, c)); c += d; } }\n  }\n  return out;\n}\nconst CASTLE_MASK = new Uint8Array(128).fill(15);\nCASTLE_MASK[0x00] = 15 & ~2; CASTLE_MASK[0x07] = 15 & ~1; CASTLE_MASK[0x04] = 15 & ~3;\nCASTLE_MASK[0x70] = 15 & ~8; CASTLE_MASK[0x77] = 15 & ~4; CASTLE_MASK[0x74] = 15 & ~12;\nfunction makeMove(p, m) {\n  const f = mFrom(m), t = mTo(m), fl = mFlags(m), pr = mPromo(m), b = p.b, x = b[f], us = p.turn;\n  let cap = b[t], capSq = t;\n  if (fl & FL_EP) { capSq = t + (us ? 16 : -16); cap = b[capSq]; b[capSq] = 0; }\n  p.hist.push({ m, cap, castle: p.castle, ep: p.ep, half: p.half, key: p.key });\n  b[t] = pr ? mk(us, pr) : x; b[f] = 0;\n  if (fl & FL_CASTLE) { if (t > f) { b[f + 1] = b[f + 3]; b[f + 3] = 0; } else { b[f - 1] = b[f - 4]; b[f - 4] = 0; } }\n  if (type(x) === K) p.kings[us] = t;\n  p.castle &= CASTLE_MASK[f] & CASTLE_MASK[t];\n  p.ep = (fl & FL_DOUBLE) ? (f + t) >> 1 : -1;\n  p.half = (type(x) === P || cap) ? 0 : p.half + 1;\n  if (us) p.full++;\n  p.turn = 1 - us;\n  p.key = hash(p); p.keys.push(p.key);\n  return cap;\n}\nfunction undoMove(p) {\n  const h = p.hist.pop(); if (!h) return;\n  const m = h.m, f = mFrom(m), t = mTo(m), fl = mFlags(m), pr = mPromo(m), b = p.b;\n  p.turn = 1 - p.turn; const us = p.turn;\n  const x = b[t];\n  b[f] = pr ? mk(us, P) : x; b[t] = 0;\n  if (fl & FL_EP) b[t + (us ? 16 : -16)] = h.cap; else b[t] = h.cap;\n  if (fl & FL_CASTLE) { if (t > f) { b[f + 3] = b[f + 1]; b[f + 1] = 0; } else { b[f - 4] = b[f - 1]; b[f - 1] = 0; } }\n  if (type(b[f]) === K) p.kings[us] = f;\n  p.castle = h.castle; p.ep = h.ep; p.half = h.half; if (us) p.full--;\n  p.key = h.key; p.keys.pop();\n}\nfunction legalMoves(p) {\n  const out = [], us = p.turn;\n  for (const m of genPseudo(p)) { makeMove(p, m); if (!inCheck(p, us)) out.push(m); undoMove(p); }\n  return out;\n}\nfunction insufficient(p) {\n  const pcs = []; for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (x && type(x) !== K) pcs.push({ t: type(x), s }); }\n  if (!pcs.length) return true;\n  if (pcs.length === 1 && (pcs[0].t === N || pcs[0].t === B)) return true;\n  if (pcs.every(q => q.t === B)) { const c = pcs.map(q => (fileOf(q.s) + rankOf(q.s)) & 1); return c.every(v => v === c[0]); }\n  return false;\n}\nfunction repetitions(p) { let n = 0; for (let i = p.keys.length - 1; i >= 0 && i >= p.keys.length - 1 - p.half; i -= 2) if (p.keys[i] === p.key) n++; return n; }\n// 'play' | 'mate' | 'stalemate' | 'fifty' | 'repeat' | 'material'\nfunction status(p) {\n  if (!legalMoves(p).length) return inCheck(p, p.turn) ? 'mate' : 'stalemate';\n  if (insufficient(p)) return 'material';\n  if (p.half >= 100) return 'fifty';\n  if (repetitions(p) >= 3) return 'repeat';\n  return 'play';\n}\nfunction san(p, m) { // \uae30\ubcf4 \ud45c\uae30\n  const f = mFrom(m), t = mTo(m), x = p.b[f], tp = type(x), fl = mFlags(m);\n  let s;\n  if (fl & FL_CASTLE) s = t > f ? 'O-O' : 'O-O-O';\n  else {\n    const cap = p.b[t] || (fl & FL_EP);\n    if (tp === P) s = (cap ? sqName(f)[0] + 'x' : '') + sqName(t) + (mPromo(m) ? '=' + LET[mPromo(m) - 1] : '');\n    else {\n      const others = legalMoves(p).filter(o => o !== m && mTo(o) === t && p.b[mFrom(o)] === x);\n      let dis = ''; if (others.length) { const sameF = others.some(o => fileOf(mFrom(o)) === fileOf(f)), sameR = others.some(o => rankOf(mFrom(o)) === rankOf(f)); dis = !sameF ? sqName(f)[0] : !sameR ? sqName(f)[1] : sqName(f); }\n      s = LET[tp - 1] + dis + (cap ? 'x' : '') + sqName(t);\n    }\n  }\n  makeMove(p, m); const st = status(p); const chk = inCheck(p, p.turn); undoMove(p);\n  return s + (st === 'mate' ? '#' : chk ? '+' : '');\n}\n\n// ---------- \ud3c9\uac00 ----------\nconst VAL = [0, 100, 320, 330, 500, 900, 0];\n// \ub9d0 \uc704\uce58 \uc810\uc218 (\ubc31 \uae30\uc900, a8\ubd80\ud130 h1 \uc21c\uc11c\ub85c \uc801\uc740 \ud45c)\nconst PST = {\n  1: [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],\n  2: [-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50],\n  3: [-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10, -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20],\n  4: [0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0],\n  5: [-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20],\n  6: [-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20],\n  7: [-50,-40,-30,-20,-20,-30,-40,-50, -30,-20,-10,0,0,-10,-20,-30, -30,-10,20,30,30,20,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,20,30,30,20,-10,-30, -30,-30,0,0,0,0,-30,-30, -50,-30,-30,-30,-30,-30,-30,-50]\n};\nconst pstAt = (t, side, s) => { const f = fileOf(s), r = rankOf(s); const idx = side ? (r * 8 + f) : ((7 - r) * 8 + f); return PST[t][idx]; };\nfunction evaluate(p) { // \ub458 \ucc28\ub840 \uae30\uc900 \uc810\uc218\n  let mat = [0, 0], pos = [0, 0], minor = 0;\n  for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (!x) continue; const t = type(x), c = color(x); if (t !== K && t !== P) minor += VAL[t]; mat[c] += VAL[t]; }\n  const endgame = minor <= 1300;\n  for (let s = 0; s < 128; s++) { if (!onB(s)) { s += 7; continue; } const x = p.b[s]; if (!x) continue; const t = type(x), c = color(x); pos[c] += pstAt(t === K && endgame ? 7 : t, c, s); }\n  // \ub05d\ub0b4\uae30: \uc774\uae30\ub294 \ucabd \ud0b9\uc73c\ub85c \uc0c1\ub300 \ud0b9 \ubab0\uae30\n  let extra = 0;\n  if (endgame) { const lead = mat[0] - mat[1]; if (Math.abs(lead) >= 300) { const w = lead > 0 ? 0 : 1, l = 1 - w, lk = p.kings[l], wk = p.kings[w];\n    if (lk >= 0 && wk >= 0) { const cd = Math.max(3 - fileOf(lk), fileOf(lk) - 4) + Math.max(3 - rankOf(lk), rankOf(lk) - 4); const kd = Math.abs(fileOf(lk) - fileOf(wk)) + Math.abs(rankOf(lk) - rankOf(wk));\n      extra = (cd * 10 + (14 - kd) * 4) * (w === 0 ? 1 : -1); } } }\n  const sc = mat[0] - mat[1] + pos[0] - pos[1] + extra;\n  return p.turn ? -sc : sc;\n}\n// ---------- \ud0d0\uc0c9 ----------\nconst MATE = 100000;\nfunction search(p0, opts) {\n  const p = { b: p0.b.slice(), turn: p0.turn, castle: p0.castle, ep: p0.ep, half: p0.half, full: p0.full, kings: p0.kings.slice(), hist: [], keys: (p0.keys || []).slice() };\n  p.key = hash(p); if (!p.keys.length) p.keys.push(p.key);\n  const deadline = Date.now() + (opts.timeMs || 1000), maxD = opts.depth || 64;\n  const TT = new Map(), killers = [], hist = new Int32Array(128 * 128);\n  let nodes = 0, stop = false, best = 0, bestScore = 0;\n  // \uc57d\ud55c \ub2e8\uacc4: \ud310\ub9c8\ub2e4 \uc815\ud574\uc9c4 \uc791\uc740 \uc624\ucc28\ub97c \uc11e\uc5b4 '\uac10'\uc774 \uc870\uae08 \ud750\ub9b0 \ud3c9\uac00 (\ud0d0\uc0c9\uc740 \uadf8\ub300\ub85c \uc77c\uad00\ub428)\n  const salt = (Math.random() * 4294967295) >>> 0, NZ = opts.noise || 0;\n  const ev = () => { let e = evaluate(p); if (NZ){ let h = (p.key ^ salt) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0; h = (h ^ (h >>> 13)) >>> 0; e += ((h % 2001) / 1000 - 1) * NZ; } return e; };\n  const order = (moves, ttm, ply) => {\n    const sc = moves.map(m => { if (m === ttm) return 1e7; const t = mTo(m), cap = p.b[t] || ((mFlags(m) & FL_EP) ? 1 : 0); if (cap) return 1e6 + VAL[type(cap) || 1] * 10 - VAL[type(p.b[mFrom(m)])] / 10; if (mPromo(m)) return 9e5;\n      const k = killers[ply]; if (k && (k[0] === m || k[1] === m)) return 8e5; return hist[mFrom(m) * 128 + t]; });\n    const idx = moves.map((_, i) => i).sort((a, b) => sc[b] - sc[a]); return idx.map(i => moves[i]);\n  };\n  function qs(alpha, beta, d) {\n    if (++nodes % 2048 === 0 && Date.now() > deadline) stop = true;\n    const st = ev(); if (st >= beta) return st; if (st > alpha) alpha = st; if (d > 8) return st;\n    const us = p.turn;\n    for (const m of order(genPseudo(p, true), 0, 63)) {\n      makeMove(p, m); if (inCheck(p, us)) { undoMove(p); continue; }\n      const v = -qs(-beta, -alpha, d + 1); undoMove(p); if (stop) return 0;\n      if (v >= beta) return v; if (v > alpha) alpha = v;\n    }\n    return alpha;\n  }\n  function ab(depth, alpha, beta, ply) {\n    if (++nodes % 2048 === 0 && Date.now() > deadline) stop = true;\n    if (stop) return 0;\n    if (ply && (p.half >= 100 || repetitions(p) >= 2)) return 0;\n    const us = p.turn, chk = inCheck(p, us);\n    if (chk) depth++;\n    if (depth <= 0) return qs(alpha, beta, 0);\n    const te = TT.get(p.key); let ttm = 0;\n    if (te) { ttm = te.m; if (ply && te.d >= depth) { if (te.f === 0) return te.v; if (te.f === 1 && te.v >= beta) return te.v; if (te.f === 2 && te.v <= alpha) return te.v; } }\n    const a0 = alpha; let bestV = -Infinity, bm = 0, legal = 0;\n    for (const m of order(genPseudo(p), ttm, ply)) {\n      makeMove(p, m); if (inCheck(p, us)) { undoMove(p); continue; }\n      legal++;\n      let v;\n      if (legal > 4 && depth >= 3 && !chk && !p.b[mTo(m)] && !mPromo(m) && !inCheck(p, p.turn)) { v = -ab(depth - 2, -alpha - 1, -alpha, ply + 1); if (v > alpha) v = -ab(depth - 1, -beta, -alpha, ply + 1); }\n      else v = -ab(depth - 1, -beta, -alpha, ply + 1);\n      undoMove(p); if (stop) return 0;\n      if (v > bestV) { bestV = v; bm = m; }\n      if (v > alpha) { alpha = v; if (ply === 0) { best = m; bestScore = v; } }\n      if (alpha >= beta) { if (!p.b[mTo(m)]) { const k = killers[ply] || (killers[ply] = [0, 0]); if (k[0] !== m) { k[1] = k[0]; k[0] = m; } hist[mFrom(m) * 128 + mTo(m)] += depth * depth; } break; }\n    }\n    if (!legal) return chk ? -MATE + ply : 0;\n    TT.set(p.key, { d: depth, v: bestV, m: bm, f: bestV <= a0 ? 2 : bestV >= beta ? 1 : 0 });\n    return bestV;\n  }\n  const rootMoves = legalMoves(p);\n  if (!rootMoves.length) return { move: 0, score: 0, depth: 0 };\n  best = rootMoves[0]; let done = 0, finalBest = best, finalScore = 0;\n  for (let d = 1; d <= maxD; d++) {\n    best = finalBest; const v = ab(d, -Infinity, Infinity, 0);\n    if (stop) break;\n    finalBest = best; finalScore = v; done = d;\n    if (Math.abs(v) > MATE - 100) break;\n    if (Date.now() > deadline - (opts.timeMs || 1000) * 0.45) break; // \ub2e4\uc74c \uae4a\uc774\ub97c \ub2e4 \ubabb \ubcfc \uac83 \uac19\uc73c\uba74 \uba48\ucda4\n  }\n  return { move: finalBest, score: finalScore, depth: done, nodes };\n}\nconst LEVEL = [{ depth: 2, timeMs: 400, noise: 140 }, { depth: 4, timeMs: 1200, noise: 30 }, { depth: 64, timeMs: 2600, noise: 0 }];\nfunction aiMove(p, level) {\n  const L = LEVEL[level] || LEVEL[1];\n  if (!legalMoves(p).length) return { move: 0 };\n  return { move: search(p, L).move };\n}\nfunction perft(p, d) { if (!d) return 1; let n = 0; for (const m of legalMoves(p)) { makeMove(p, m); n += perft(p, d - 1); undoMove(p); } return n; }\nroot.CH = { P, N, B, R, Q, K, BLACK, M, mFrom, mTo, mPromo, mFlags, FL_EP, FL_CASTLE, FL_DOUBLE, sq, fileOf, rankOf, onB, color, type, mk, NAME, VAL,\n  newPosition, fromFEN, toFEN, START, legalMoves, makeMove, undoMove, inCheck, attacked, status, san, sqName, search, aiMove, evaluate, perft, LEVEL, hash, repetitions };\n})(typeof window !== 'undefined' ? window : globalThis);\n";
+
+</script>
+<script>
+window.CLESSONS = [
+{ title:'폰', type:'reach', fen:'4k3/8/8/8/8/8/4P3/4K3 w - - 0 1', stars:['e4'], text:'폰은 앞으로 한 칸씩 가요. 처음 움직일 때만 두 칸까지 갈 수 있어요.\n폰을 눌러서 별(★) 자리로 두 칸 움직여보세요.', ok:'잘했어요! 폰은 뒤로는 못 가요.', bad:'폰을 눌러서 두 칸 앞 별 자리로 옮겨보세요.' },
+{ title:'폰으로 잡기', type:'reach', fen:'4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1', stars:['d5'], text:'폰은 앞으로 가지만, 잡을 때는 대각선 앞 한 칸으로 잡아요.\n상대 폰을 잡아보세요.', ok:'맞아요! 폰은 똑바로 가고 비스듬히 잡아요.', bad:'폰은 대각선 앞 한 칸에 있는 상대 말만 잡을 수 있어요.' },
+{ title:'룩', type:'reach', fen:'7k/8/8/3p4/8/8/8/3R2K1 w - - 0 1', stars:['d5'], text:'룩(성)은 가로·세로로 막히지 않는 데까지 몇 칸이든 가요.\n룩으로 상대 폰을 잡아보세요.', ok:'좋아요! 룩은 곧게 쭉 달려요.', bad:'룩은 가로·세로로만 가요. 같은 줄에 있는 폰을 찾아보세요.' },
+{ title:'비숍', type:'reach', fen:'7k/8/8/8/8/2p5/8/B5K1 w - - 0 1', stars:['c3'], text:'비숍(주교)은 대각선으로 몇 칸이든 가요. 그래서 늘 같은 색 칸에만 있어요.\n비숍으로 폰을 잡아보세요.', ok:'맞아요! 비숍은 비스듬히 쭉.', bad:'비숍은 대각선으로만 가요.' },
+{ title:'나이트', type:'reach', fen:'7k/8/8/3p4/8/4N3/8/6K1 w - - 0 1', stars:['d5'], text:'나이트(말)는 "ㄱ"자로 움직여요. 두 칸 가고 옆으로 한 칸.\n다른 말을 뛰어넘을 수 있는 유일한 말이에요. 폰을 잡아보세요.', ok:'정답! 나이트는 ㄱ자로 뛰어요.', bad:'나이트는 두 칸 + 옆 한 칸, ㄱ자로 가요.' },
+{ title:'퀸', type:'reach', fen:'7k/8/8/8/1p6/8/8/4Q1K1 w - - 0 1', stars:['b4'], text:'퀸은 룩과 비숍을 합친 말이에요. 가로·세로·대각선 어디든 쭉.\n가장 강한 말이에요. 폰을 잡아보세요.', ok:'좋아요! 퀸은 가장 소중한 공격수예요.', bad:'퀸은 8방향 어디든 쭉 갈 수 있어요. 대각선을 보세요.' },
+{ title:'킹', type:'piece', piece:'K', fen:'k7/8/8/8/8/8/8/4K3 w - - 0 1', stars:['d1','d2','e2','f2','f1'], text:'킹은 모든 방향으로 한 칸씩만 가요.\n킹이 잡히면 지는 게임이라, 킹을 지키는 게 가장 중요해요. 킹을 한 칸 움직여보세요.', ok:'맞아요! 킹은 느리지만 가장 중요한 말이에요.', bad:'킹을 눌러서 바로 옆 한 칸으로 옮겨보세요.' },
+{ title:'체크 피하기', type:'goal', goal:'escape', fen:'4r1k1/8/8/8/8/8/8/4K3 w - - 0 1', text:'킹이 공격받는 걸 "체크"라고 해요. 체크를 받으면 반드시 피해야 해요.\n룩이 킹을 노리고 있어요. 킹을 안전한 칸으로 옮겨보세요.', ok:'잘 피했어요! 체크를 풀지 않는 수는 둘 수 없어요.', bad:'' },
+{ title:'캐슬링', type:'goal', goal:'castle', fen:'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', text:'캐슬링: 킹을 룩 쪽으로 두 칸 옮기면 룩이 킹을 넘어 옆에 붙어요.\n킹을 안전하게 숨기는 특별한 수예요. 킹을 오른쪽으로 두 칸 옮겨보세요.\n(킹과 룩이 한 번도 안 움직였고, 사이가 비어 있고, 체크가 아닐 때만 돼요)', ok:'캐슬링 완성! 킹은 구석으로, 룩은 가운데로 나왔어요.', bad:'킹을 눌러서 두 칸 옆으로 옮겨보세요.' },
+{ title:'앙파상', type:'goal', goal:'ep', fen:'4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2', text:'상대 폰이 두 칸 전진해서 내 폰 바로 옆에 왔을 때, 바로 다음 수에만\n한 칸 지나간 것처럼 대각선으로 잡을 수 있어요. 이걸 "앙파상"이라고 해요.\n흑 폰이 방금 d7에서 d5로 왔어요. 앙파상으로 잡아보세요.', ok:'앙파상! 체스에서 가장 헷갈리는 규칙을 익혔어요.', bad:'내 폰을 상대 폰 뒤쪽 대각선(d6)으로 옮겨보세요.' },
+{ title:'프로모션', type:'goal', goal:'promo', fen:'7k/4P3/8/8/8/8/8/4K3 w - - 0 1', text:'폰이 끝 줄까지 가면 퀸·룩·비숍·나이트 중 하나로 바뀌어요.\n보통은 가장 강한 퀸을 골라요. 폰을 끝까지 올려보세요.', ok:'프로모션! 폰이 새 말로 다시 태어났어요.', bad:'폰을 한 칸 앞 끝 줄로 옮겨보세요.' },
+{ title:'체크메이트 (뒷줄)', type:'goal', goal:'mate', fen:'6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1', text:'체크를 피할 방법이 하나도 없으면 "체크메이트"로 이겨요.\n흑 킹이 자기 폰에 막혀 도망갈 곳이 없어요. 한 수로 체크메이트를 만들어보세요.', ok:'체크메이트! 뒷줄이 막힌 킹은 위험해요.', bad:'그 수는 체크메이트가 아니에요. 룩으로 맨 윗줄을 노려보세요.' },
+{ title:'체크메이트 (퀸)', type:'goal', goal:'mate', fen:'k7/8/1K6/8/8/8/8/2Q5 w - - 0 1', text:'퀸과 킹으로 끝내기. 함정이 있어요!\n상대가 체크도 아닌데 움직일 곳이 하나도 없으면 "스테일메이트"로 비겨요.\n체크메이트를 만들어보세요.', ok:'체크메이트! 이길 땐 스테일메이트를 조심해야 해요.', bad:'그 수는 체크메이트가 아니에요.' },
+{ title:'이제 실전!', type:'finish', fen:'8/8/8/8/8/8/8/8 w - - 0 1', text:'다 배웠어요!\n· 킹을 잡을 수 있게 되면(체크메이트) 승리\n· 체크는 꼭 풀어야 해요\n· 캐슬링·앙파상·프로모션은 특별한 수\n이제 초급 AI와 한 판 둬보세요.', ok:'' }
+];
+
+</script>
+<script>
+(function(){
+'use strict';
+const C = CH, LVN = ['초급','중급','고급'], SIDE = ['백','흑'];
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('sudam.ch.v1.'+k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('sudam.ch.v1.'+k, JSON.stringify(v)); }catch(e){} }
+};
+let settings = Object.assign({ sound:true, showMoves:true, coords:true, level:0, side:0 }, store.get('settings',{}));
+let rec = Object.assign({ games:[], grade:0, lessons:{} }, store.get('rec',{}));
+let G = store.get('game', null), P = null;
+let sel = -1, hint = null, thinking = false, token = 0, screen = 'home', anim = null, thinkMark = null, ending = false;
+const $ = id => document.getElementById(id);
+let toastT; function toast(m, big){ if (!m) return; const t=$('toast'); t.textContent=m; t.classList.toggle('big', !!big); t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'), big?1300:1900); }
+function show(n){ screen=n; document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===n)); if(n==='home') renderHome(); if(n==='learn') renderLessons(); if(n==='records') renderRecords(); window.scrollTo(0,0); }
+function closeAll(){ document.querySelectorAll('.dim').forEach(d=>d.classList.remove('on')); }
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeAll);
+document.querySelectorAll('.dim').forEach(d=>d.addEventListener('click',e=>{ if(e.target===d) closeAll(); }));
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ closeAll(); show('home'); });
+function ask(t, x, yes, f){ $('askTitle').textContent=t; $('askText').textContent=x; $('askYes').textContent=yes; $('askYes').onclick=()=>{ closeAll(); f(); }; $('askModal').classList.add('on'); }
+const gradeName = g => g < 30 ? (30-g)+'급' : (g-29)+'단';
+const CAP = [11, 19, 30], FLOOR = [0, 12, 20];
+
+let actx=null;
+function clack(cap){ if (!settings.sound) return; try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+  const t=actx.currentTime, len=cap?.12:.08, buf=actx.createBuffer(1, actx.sampleRate*len, actx.sampleRate), d=buf.getChannelData(0);
+  for (let i=0;i<d.length;i++){ const k=i/d.length; d[i]=(Math.random()*2-1)*Math.pow(1-k,5); }
+  const src=actx.createBufferSource(); src.buffer=buf; const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=cap?1200:1700; f.Q.value=1.2;
+  const g=actx.createGain(); g.gain.setValueAtTime(cap?1:.8,t); g.gain.exponentialRampToValueAtTime(.01,t+len); src.connect(f); f.connect(g); g.connect(actx.destination); src.start(t); }catch(e){} }
+
+// ---------- 말 그림 (45×45) ----------
+const SHAPES = {
+  1: '<circle cx="22.5" cy="12" r="5.6"/><path d="M15.5 35C16 28 19 24.6 19.6 21.2L17.8 19.6h9.4l-1.8 1.6C26 24.6 29 28 29.5 35z"/>',
+  2: '<path d="M13 35c0-6 2-9 6-12-1.6-.5-4 0-5.5 1.5-2-1.5-2-4.5-.5-6.5L20 10l-.5-3.5 3 2.5c4.5 0 8.5 3 10 9 1 5 .5 11-.5 17z"/><circle class="dt" cx="19.6" cy="13.6" r="1.25"/><path class="ln" d="M24.5 11c3.8 3 5.2 9 4.6 16" fill="none"/>',
+  3: '<circle cx="22.5" cy="5.4" r="2.3"/><path d="M22.5 7.4c-5.5 5-8.4 10-7 15.6 1 3.2 3.6 4.4 7 4.4s6-1.2 7-4.4c1.4-5.6-1.5-10.6-7-15.6z"/><path class="ln" d="M25.4 13.2l-4.6 6" fill="none"/><rect x="17" y="27.2" width="11" height="3" rx="1"/><path d="M17.4 30.2c0 2.4-2.2 3.8-3.2 4.8h16.6c-1-1-3.2-2.4-3.2-4.8z"/>',
+  4: '<path d="M13 35l1.6-17h15.8L32 35z"/><path d="M12 17.6V9.2h4v3h3.4v-3h6.2v3H29v-3h4v8.4z"/><path class="ln" d="M14.6 21h15.8M14 31h17" fill="none"/>',
+  5: '<path d="M12 30.5L10 13l4.6 8 1.4-11.6 3.6 10L22.5 7.6l2.9 11.8 3.6-10 1.4 11.6 4.6-8-2 17.5z"/><circle cx="10" cy="12.4" r="2"/><circle cx="16" cy="8.8" r="2"/><circle cx="22.5" cy="6.6" r="2"/><circle cx="29" cy="8.8" r="2"/><circle cx="35" cy="12.4" r="2"/><path d="M12 30.5c5 2 16 2 21 0V33.6c-5 2-16 2-21 0z"/>',
+  6: '<path class="cr" d="M22.5 3.6v8M18.6 7.4h7.8" fill="none"/><path d="M22.5 13c3.6 0 5.6 2.2 4.6 6 5-3.6 10-1 8.6 4-1 3-3.6 5-3.6 7.4H12.4c0-2.4-2.6-4.4-3.6-7.4-1.4-5 3.6-7.6 8.6-4-1-3.8 1-6 5.1-6z"/><path d="M12.4 30.4c5 2 15.2 2 20.2 0v3.2c-5 2-15.2 2-20.2 0z"/>'
+};
+function pieceSVG(p){
+  const t = C.type(p), w = C.color(p)===0;
+  const fill = w ? '#FBF7EE' : '#2B2622', stroke = w ? '#2A1E14' : '#0B0907', det = w ? '#2A1E14' : '#E9DDC6';
+  return '<g fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">'+
+    SHAPES[t].replace('class="dt"','fill="'+det+'" stroke="none"').replace(/class="ln"/g,'stroke="'+det+'" stroke-width="1.3"').replace('class="cr"','stroke="'+stroke+'" stroke-width="3"')+
+    '<rect x="9.5" y="35" width="26" height="4.4" rx="1.6"/></g>';
+}
+function miniPiece(el, p){ el.innerHTML = pieceSVG(p); }
+
+// ---------- 판 그리기 ----------
+const LIGHT = '#F0DAB5', DARK = '#B58863';
+function disp(s, flip){ const f = C.fileOf(s), r = C.rankOf(s); return flip ? [7-f, r] : [f, 7-r]; }
+function drawBoard(el, pos, o){
+  o = o || {}; const flip = !!o.flip;
+  let s = '<svg viewBox="0 0 8 8" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="체스판">';
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++){ const [x,y] = disp(C.sq(f,r), flip); s += '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+(((f+r)&1)?LIGHT:DARK)+'"/>'; }
+  const tint = (q, c, op) => { const [x,y] = disp(q, flip); return '<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'" opacity="'+op+'"/>'; };
+  if (o.lastFrom!=null) s += tint(o.lastFrom, '#E9D24A', .45) + tint(o.lastTo, '#E9D24A', .55);
+  if (o.sel!=null && o.sel>=0) s += tint(o.sel, '#5B8C3A', .55);
+  if (o.check!=null && o.check>=0){ const [x,y] = disp(o.check, flip); s += '<circle cx="'+(x+.5)+'" cy="'+(y+.5)+'" r=".55" fill="#D23A2A" opacity=".55"/>'; }
+  if (o.think){ s += '<g class="tgc">'+tint(o.think.from, '#3B6FB0', .35)+tint(o.think.to, '#3B6FB0', .45)+'</g>'; }
+  if (o.marks) for (const m of o.marks){ const [x,y] = disp(m.s, flip);
+    if (m.kind==='hint') s += '<rect x="'+(x+.06)+'" y="'+(y+.06)+'" width=".88" height=".88" fill="none" stroke="#2F6B3A" stroke-width=".07" stroke-dasharray=".16 .09"/>';
+    if (m.kind==='star') s += '<text x="'+(x+.5)+'" y="'+(y+.56)+'" font-size=".6" text-anchor="middle" dominant-baseline="middle" fill="#A8322D" opacity=".9">★</text>'; }
+  if (settings.coords && o.coords!==false){ for (let i=0;i<8;i++){
+    const fl = flip ? 7-i : i, rk = flip ? i : 7-i;
+    s += '<text x="'+(i+.94)+'" y="7.93" font-size=".2" text-anchor="end" fill="'+((i%2)?DARK:LIGHT)+'" font-family="sans-serif" font-weight="700">'+'abcdefgh'[fl]+'</text>';
+    s += '<text x=".05" y="'+(i+.22)+'" font-size=".2" fill="'+((i%2)?DARK:LIGHT)+'" font-family="sans-serif" font-weight="700">'+(rk+1)+'</text>'; } }
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++){ const q = C.sq(f,r), p = pos.b[q]; if (!p) continue; const [x,y] = disp(q, flip);
+    let cls = '', st = '';
+    if (o.anim && o.anim.to===q && Date.now()<o.anim.until){ const [fx,fy] = disp(o.anim.from, flip); cls = ' class="mv"'; st = ' style="--dx:'+(fx-x)+'px;--dy:'+(fy-y)+'px"'; }
+    s += '<g'+cls+st+'><g transform="translate('+x+' '+y+') scale(.02222)">'+pieceSVG(p)+'</g></g>'; }
+  if (o.anim && o.anim.cap && o.anim.capSq!=null && Date.now()<o.anim.until){ const [x,y] = disp(o.anim.capSq, flip); s += '<g class="gone"><g transform="translate('+x+' '+y+') scale(.02222)">'+pieceSVG(o.anim.cap)+'</g></g>'; }
+  if (o.dots) for (const d of o.dots){ const [x,y] = disp(d, flip);
+    s += pos.b[d] ? '<circle cx="'+(x+.5)+'" cy="'+(y+.5)+'" r=".44" fill="none" stroke="#1E3A12" stroke-opacity=".45" stroke-width=".08"/>' : '<circle cx="'+(x+.5)+'" cy="'+(y+.5)+'" r=".15" fill="#1E3A12" opacity=".35"/>'; }
+  s += '</svg>'; el.innerHTML = s;
+}
+function sqFrom(el, e, flip){
+  const r = el.getBoundingClientRect(); const x = Math.floor((e.clientX-r.left)/r.width*8), y = Math.floor((e.clientY-r.top)/r.height*8);
+  if (x<0||y<0||x>7||y>7) return -1;
+  return flip ? C.sq(7-x, y) : C.sq(x, 7-y);
+}
+
+// ---------- 홈 ----------
+function renderHome(){
+  $('myGrade').textContent = gradeName(rec.grade); $('gradeBar').style.width = Math.min(100, rec.grade/32*100)+'%';
+  const lv = rec.grade<11?0:rec.grade<19?1:2; $('gradeTip').textContent = '추천 상대: '+LVN[lv]+' · 이기면 기력이 올라가요';
+  const live = G && !G.over; $('resume').hidden = !live;
+  if (live) $('rsInfo').textContent = (G.mode==='pvp'?'둘이서':G.mode==='online'?'온라인 · 방 '+G.code+' · 나는 '+SIDE[G.human]:'AI '+LVN[G.level]+' · 나는 '+SIDE[G.human])+' · '+G.moves.length+'수';
+  const done = Object.keys(rec.lessons).length;
+  $('learnInfo').textContent = done ? done+' / '+CLESSONS.length+'강 완료' : '완전 처음이라면 여기부터 · '+CLESSONS.length+'강';
+  $('icPlay').innerHTML = '<svg viewBox="0 0 45 45" width="40" height="40">'+pieceSVG(C.mk(0,C.N))+'</svg>';
+}
+$('resume').onclick = ()=>openGame();
+function chips(id, val, f){ document.querySelectorAll('#'+id+' button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===val)); b.onclick=()=>f(+b.dataset.v); }); }
+function renderSetup(){
+  chips('sLevel', settings.level, v=>{ settings.level=v; store.set('settings',settings); renderSetup(); });
+  chips('sSide', settings.side, v=>{ settings.side=v; store.set('settings',settings); renderSetup(); });
+}
+$('goPlay').onclick = ()=>{ renderSetup(); $('setup').classList.add('on'); };
+$('startGame').onclick = ()=>{ closeAll(); const h = settings.side===2 ? (Math.random()<.5?0:1) : settings.side; newGame('ai', settings.level, h); };
+$('goPvp').onclick = ()=>newGame('pvp', 0, 0);
+$('goLearn').onclick = ()=>show('learn'); $('goRecords').onclick = ()=>show('records'); $('goRules').onclick = ()=>show('rules');
+
+// ---------- 대국 ----------
+function build(){ P = C.newPosition(); for (const m of G.moves) C.makeMove(P, m); }
+function save(){ store.set('game', G); }
+function newGame(mode, level, human){
+  token++; thinking=false; $('think').hidden=true;
+  if (G && !G.over && G.mode==='ai' && G.moves.length>4) logResult(1-G.human, 'quit');
+  if (G && G.mode==='online') netStop();
+  G = { mode, level, human, moves:[], hints:0, undos:0, over:false, drawAsked:0 };
+  sel=-1; hint=null; anim=null; ending=false; build(); save(); openGame();
+}
+function openGame(){ if (!P || P.hist.length!==G.moves.length) build(); sel=-1; hint=null; show('game'); if (G.mode==='online') netWatch(); renderGame();
+  if (!G.over){ const s = C.status(P); if (s!=='play'){ finishByStatus(s); return; } } maybeAI(); }
+const flipNow = () => (G.mode==='ai' || G.mode==='online') ? G.human===1 : false;
+function names(){ if (G.mode==='pvp') return ['백','흑'];
+  if (G.mode==='online'){ const me='나 ('+(NET.name()||'나')+')', op=G.opp||'상대'; return G.human===0 ? [me+' · 백', op+' · 흑'] : [op+' · 백', me+' · 흑']; }
+  return G.human===0 ? ['나 · 백','AI '+LVN[G.level]+' · 흑'] : ['AI '+LVN[G.level]+' · 백','나 · 흑']; }
+function captured(){ // 각 편이 잡은 말 + 점수 차이
+  const start = { 1:8, 2:2, 3:2, 4:2, 5:1 }, left = [{},{}];
+  for (let s=0;s<128;s++){ if (!C.onB(s)){ s+=7; continue; } const p=P.b[s]; if (!p) continue; const c=C.color(p), t=C.type(p); left[c][t]=(left[c][t]||0)+1; }
+  const caps = [[],[]], mat=[0,0];
+  for (const c of [0,1]){ for (const t of [5,4,3,2,1]){ const n = Math.max(0, start[t] - (left[1-c][t]||0)); for (let i=0;i<n;i++) caps[c].push(C.mk(1-c,t)); } for (const t in left[c]) mat[c] += C.VAL[t]*left[c][t]; }
+  return { caps, diff: Math.round((mat[0]-mat[1])/100) };
+}
+function renderGame(){
+  const flip = flipNow(), [n0, n1] = names(), bot = flip ? 1 : 0, top = 1-bot;
+  $('gTitle').textContent = G.mode==='pvp' ? '둘이서' : G.mode==='online' ? '온라인 대전' : 'AI '+LVN[G.level];
+  $('netBar').hidden = G.mode!=='online'; if (G.mode==='online' && netRoom) NET.statusBar($('netBar'), netRoom);
+  $('gMove').textContent = Math.ceil(G.moves.length/2)+'수';
+  $('nTop').textContent = top===0?n0:n1; $('nBot').textContent = bot===0?n0:n1;
+  miniPiece($('pcTop'), C.mk(top, C.K)); miniPiece($('pcBot'), C.mk(bot, C.K));
+  const cp = captured(), capHTML = c => cp.caps[c].map(p=>'<svg viewBox="0 0 45 45">'+pieceSVG(p)+'</svg>').join('') + ((c===0?cp.diff:-cp.diff)>0 ? '<em>+'+(c===0?cp.diff:-cp.diff)+'</em>' : '');
+  $('cTop').innerHTML = capHTML(top); $('cBot').innerHTML = capHTML(bot);
+  const live = !G.over && !ending;
+  $('pTop').classList.toggle('turn', live && P.turn===top); $('pBot').classList.toggle('turn', live && P.turn===bot);
+  const last = P.hist.length ? P.hist[P.hist.length-1].m : null;
+  const dots = sel>=0 && settings.showMoves ? C.legalMoves(P).filter(m=>C.mFrom(m)===sel).map(m=>C.mTo(m)) : null;
+  const ck = C.inCheck(P, P.turn) ? P.kings[P.turn] : null;
+  const marks = []; if (hint) { marks.push({ s:C.mFrom(hint), kind:'hint' }); marks.push({ s:C.mTo(hint), kind:'hint' }); }
+  drawBoard($('board'), P, { flip, sel, dots, lastFrom: last!=null?C.mFrom(last):null, lastTo: last!=null?C.mTo(last):null, check: ck, marks, anim, think: thinking ? thinkMark : null });
+  if (anim) anim.until = 0;
+  const myTurn = live && !thinking && (G.mode==='pvp' || P.turn===G.human) && !(G.mode==='online' && !netReady());
+  $('undoBtn').disabled = !myTurn || !G.moves.length || G.mode==='online'; $('hintBtn').disabled = !myTurn || G.mode==='online';
+  $('drawBtn').disabled = !live || G.mode==='pvp' || (G.mode==='ai' && (thinking || P.turn!==G.human)) || G.moves.length<2;
+  $('resignBtn').disabled = !live || thinking;
+  let st;
+  if (thinking) st = 'AI가 수를 읽는 중…';
+  else if (G.over || ending) st = '대국 끝';
+  else if (G.mode==='online' && !netReady()) st = '상대를 기다리는 중…';
+  else if (G.mode==='online' && P.turn!==G.human) st = (G.opp||'상대')+' 차례 · 기다리는 중…';
+  else { const who = SIDE[P.turn]; st = G.mode==='pvp' ? who+' 차례' : '내 차례 ('+who+')'; }
+  if (ck!=null && !G.over) st = '<span class="warn">체크! </span>'+st;
+  $('gStatus').innerHTML = st;
+}
+let pendingPromo = null;
+function tryMove(from, to){
+  const cands = C.legalMoves(P).filter(m=>C.mFrom(m)===from && C.mTo(m)===to);
+  if (!cands.length) return false;
+  if (cands.length>1 && C.mPromo(cands[0])){ // 프로모션 고르기
+    pendingPromo = cands; const side = P.turn;
+    $('promoBox').innerHTML = [C.Q, C.R, C.B, C.N].map(t=>'<button data-t="'+t+'" aria-label="'+C.NAME[t]+'"><svg viewBox="0 0 45 45">'+pieceSVG(C.mk(side,t))+'</svg></button>').join('');
+    $('promoBox').querySelectorAll('button').forEach(b=>b.onclick=()=>{ closeAll(); const m = pendingPromo.find(x=>C.mPromo(x)===+b.dataset.t); pendingPromo=null; userMove(m); });
+    $('promoModal').classList.add('on'); return true;
+  }
+  userMove(cands[0]); return true;
+}
+function userMove(m){ if (G.mode==='online'){ doMove(m); netSend(m); return; } if (!doMove(m)) maybeAI(); }
+function afterMove(cap){
+  clack(!!cap); save();
+  const s = C.status(P);
+  if (s!=='play'){ finishByStatus(s); return true; }
+  if (C.inCheck(P, P.turn)) toast('체크!', true);
+  else if (cap) toast(C.NAME[C.type(cap)]+'을(를) 잡았어요');
+  return false;
+}
+function doMove(m){
+  const from = C.mFrom(m), to = C.mTo(m), fl = C.mFlags(m);
+  const capSq = (fl & C.FL_EP) ? to + (P.turn ? 16 : -16) : to, capP = P.b[capSq];
+  const cap = C.makeMove(P, m); G.moves.push(m); sel=-1; hint=null;
+  anim = { from, to, cap: capP||0, capSq, until: Date.now()+700 };
+  if (fl & C.FL_CASTLE) toast('캐슬링!'); else if (fl & C.FL_EP) toast('앙파상!'); else if (C.mPromo(m)) toast(C.NAME[C.mPromo(m)]+'(으)로 프로모션!');
+  renderGame(); return afterMove(cap);
+}
+$('board').addEventListener('click', e=>{
+  if (!G || G.over || thinking || ending) return;
+  if ((G.mode==='ai' || G.mode==='online') && P.turn!==G.human) return;
+  if (G.mode==='online' && !netReady()) return;
+  const s = sqFrom($('board'), e, flipNow()); if (s<0) return;
+  const p = P.b[s];
+  if (sel>=0){
+    if (s===sel){ sel=-1; renderGame(); return; }
+    if (tryMove(sel, s)) return;
+    if (p && C.color(p)===P.turn){ sel = s; renderGame(); return; }
+    const pseudo = C.legalMoves(P).length && (()=>{ // 왜 안 되는지
+      return C.inCheck(P, P.turn) ? '체크를 먼저 풀어야 해요' : '그 말은 거기로 못 가요'; })();
+    toast(pseudo); sel=-1; renderGame(); return;
+  }
+  if (p && C.color(p)===P.turn){ sel = s; renderGame(); }
+});
+let worker = null, workerOK = true, wcb = null, reqId = 0;
+function getWorker(){
+  if (!workerOK || !window.CH_SRC) return null; if (worker) return worker;
+  try{
+    const src = window.CH_SRC + '\nonmessage=function(e){var d=e.data;var p=CH.fromFEN(d.fen);p.keys=d.keys||p.keys;var r=d.hint?CH.search(p,{timeMs:1500}):CH.aiMove(p,d.level);postMessage({id:d.id,move:r.move,score:r.score||0});};';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type:'text/javascript' })));
+    worker.onmessage = e=>{ if (e.data.id!==reqId) return; const f=wcb; wcb=null; if (f) f(e.data); };
+    worker.onerror = ()=>{ workerOK=false; try{ worker.terminate(); }catch(e){} worker=null; const f=wcb; wcb=null; if (f) f(null); };
+    return worker;
+  }catch(e){ workerOK=false; return null; }
+}
+function computeAI(level, cb, hintMode){
+  const sync = ()=>{ const r = hintMode ? C.search(P, { timeMs:1500 }) : C.aiMove(P, level); return { move:r.move, score:r.score||0 }; };
+  const w = getWorker();
+  if (!w){ setTimeout(()=>cb(sync()), 30); return; }
+  let done = false; const fin = d=>{ if (done) return; done = true; cb(d || sync()); };
+  wcb = fin; setTimeout(()=>{ if (!done){ workerOK=false; wcb=null; fin(null); } }, 9000);
+  w.postMessage({ id: ++reqId, fen: C.toFEN(P), keys: P.keys.slice(-120), level, hint: !!hintMode });
+}
+function maybeAI(){
+  if (G.over || ending || G.mode!=='ai' || P.turn===G.human) return;
+  thinking = true; thinkMark = null; const tk = ++token; $('think').hidden=false; renderGame();
+  const t0 = Date.now(), target = 1200 + Math.random()*1800; let result = null;
+  const legal = C.legalMoves(P);
+  const gesture = setInterval(()=>{ if (tk!==token || !thinking){ clearInterval(gesture); return; }
+    thinkMark = legal.length && Math.random()<.85 ? (m=>({ from:C.mFrom(m), to:C.mTo(m) }))(legal[(Math.random()*legal.length)|0]) : null; renderGame(); }, 620);
+  const finish = ()=>{
+    if (tk!==token) return;
+    if (!result || Date.now()-t0 < target){ setTimeout(finish, 60); return; }
+    clearInterval(gesture); thinking = false; thinkMark = null; $('think').hidden=true;
+    let m = result.move; if (!C.legalMoves(P).includes(m)) m = C.aiMove(P, G.level).move; // 안전장치
+    doMove(m);
+  };
+  computeAI(G.level, r=>{ result = r; });
+  setTimeout(finish, 60);
+}
+$('undoBtn').onclick = ()=>{
+  if (thinking||G.over||ending||!G.moves.length||G.mode==='online') return;
+  let k = 1; if (G.mode==='ai'){ k = P.turn===G.human ? 2 : 1; k = Math.min(k, G.moves.length); }
+  G.moves.splice(G.moves.length-k, k); G.undos++; build(); sel=-1; hint=null; anim=null; save(); renderGame(); maybeAI();
+};
+$('hintBtn').onclick = ()=>{
+  if (thinking||G.over||ending) return; G.hints++; save(); thinking=true; $('think').hidden=false; renderGame();
+  computeAI(2, r=>{ thinking=false; $('think').hidden=true; hint = r && C.legalMoves(P).includes(r.move) ? r.move : null; if (hint) toast('초록 점선: 이 말을 저 자리로'); renderGame(); }, true);
+};
+$('drawBtn').onclick = ()=>{
+  if (G.over || ending) return;
+  if (G.mode==='online'){ netOfferDraw(); return; }
+  if (G.mode!=='ai' || thinking) return;
+  if (G.drawAsked && G.moves.length - G.drawAsked < 10){ toast('조금 더 두고 다시 제안해요'); return; }
+  G.drawAsked = G.moves.length; save(); thinking=true; $('think').hidden=false; renderGame();
+  // AI는 자기 쪽이 확실히 유리하지 않을 때만 받아들여요
+  computeAI(2, r=>{ thinking=false; $('think').hidden=true; const aiScore = -(r ? r.score : 0);
+    if (aiScore < 60 && G.moves.length >= 30){ toast('AI가 무승부를 받아들였어요'); endGame(null, 'agree'); }
+    else { toast(G.moves.length < 30 ? 'AI: 아직 이르다고 거절했어요' : 'AI가 거절했어요 (AI 쪽이 유리해요)'); renderGame(); } }, true);
+};
+$('resignBtn').onclick = ()=>{
+  if (G.over || ending) return;
+  if (G.mode==='online'){ ask('기권할까요?', '상대가 이긴 것으로 끝나요.', '기권', ()=>netEnd(1-G.human, 'resign')); return; }
+  if (G.mode==='pvp'){ const w = SIDE[P.turn]; ask(w+' 기권', w+'이 기권하고 끝낼까요?', '기권', ()=>endGame(1-P.turn,'resign')); return; }
+  ask('기권할까요?', '이 대국은 패배로 기록돼요.', '기권', ()=>{ token++; thinking=false; $('think').hidden=true; endGame(1-G.human,'resign'); });
+};
+$('gHome').onclick = ()=>{ if (G && G.mode==='online'){ sel=-1; show('home'); return; } token++; thinking=false; $('think').hidden=true; sel=-1; show('home'); };
+function finishByStatus(s){
+  ending = true; renderGame();
+  const tk = token;
+  const go = ()=>{ if (tk!==token && G.mode!=='online') return; ending=false; if (G.over) return; if (s==='mate') endGame(1-P.turn, 'mate'); else endGame(null, s); };
+  if (s==='mate') toast('체크메이트!', true); else toast('무승부', true);
+  setTimeout(go, 1300);
+}
+function logResult(winner, how){
+  if (!G || G.logged) return 0; G.logged = true;
+  const e = { t:Date.now(), mode:G.mode, level:G.level, human:G.human, winner, how, moves:G.moves.length };
+  let change = 0;
+  if (G.mode==='ai'){ const won = winner===G.human;
+    if (won && !G.hints && !G.undos && rec.grade < CAP[G.level]){ rec.grade++; change=1; }
+    if (winner!=null && !won && how!=='quit' && rec.grade > FLOOR[G.level] && rec.grade>0){ rec.grade--; change=-1; }
+    e.result = winner==null ? 'draw' : won ? 'win' : 'lose'; }
+  if (G.mode==='online'){ e.result = winner==null ? 'draw' : winner===G.human ? 'win' : 'lose'; e.opp = G.opp; e.code = G.code; }
+  e.change = change; rec.games.unshift(e); if (rec.games.length>300) rec.games.length=300; store.set('rec', rec); return change;
+}
+const HOW = { mate:'체크메이트', resign:'기권', time:'시간 초과', stalemate:'스테일메이트', fifty:'50수 규칙', repeat:'같은 장면 3번', material:'메이트할 말 부족', agree:'합의', quit:'중단' };
+function endGame(winner, how){
+  G.over = true; G.winner = winner; ending = false; save(); sel=-1; token++; thinking=false; $('think').hidden=true;
+  const change = logResult(winner, how);
+  $('rTitle').textContent = winner==null ? '무승부' : (G.mode==='ai' || G.mode==='online') ? (winner===G.human?'이겼어요!':'졌어요') : SIDE[winner]+' 승';
+  $('rSub').textContent = (winner==null ? '' : SIDE[winner]+' 승 · ')+HOW[how]+((how==='resign'||how==='time')&&winner!=null?' ('+SIDE[1-winner]+')':'')+' · '+Math.ceil(G.moves.length/2)+'수';
+  if (G.mode==='ai'){ $('rGrade').hidden=false;
+    $('rGrade').innerHTML = '<span class="lbl">내 기력</span><b class="title" style="font-size:24px">'+gradeName(rec.grade)+'</b><span class="muted" style="font-size:13px">'+(change>0?'▲ 1급 올랐어요':change<0?'▼ 1급 내려갔어요':(winner===G.human&&(G.hints||G.undos)?'무르기·힌트를 써서 기력은 그대로예요':winner===G.human?'이 단계로는 더 오를 수 없어요. 다음 단계에 도전해보세요':'그대로예요'))+'</span>'; }
+  else $('rGrade').hidden = true;
+  const last = P.hist.length ? P.hist[P.hist.length-1].m : null;
+  drawBoard($('rBoard'), P, { flip: flipNow(), lastFrom: last!=null?C.mFrom(last):null, lastTo: last!=null?C.mTo(last):null, check: (how==='mate') ? P.kings[P.turn] : null });
+  $('rAgain').textContent = G.mode==='online' ? '같은 상대와 한 판 더 (백흑 바꿈)' : '한 판 더';
+  $('rAgain').onclick = ()=> G.mode==='online' ? netRematch() : G.mode==='pvp' ? newGame('pvp',0,0) : newGame('ai', G.level, G.human);
+  show('result');
+}
+
+// ---------- 온라인 대전 ----------
+let netRoom = null, netStopFn = null, netPres = null, netOn = false, netTs = 0, netTl = 0, netSt = null;
+const NG = 'chess';
+const parseSt = r => { try{ return JSON.parse(r && r.st || '{}'); }catch(e){ return {}; } };
+const netReady = () => !!(netSt && netSt.moves);
+function netStop(){ netOn = false; if (netStopFn){ netStopFn(); netStopFn=null; } if (netPres){ netPres(); netPres=null; } }
+function oppName(room, mySeat){ for (const k in room.seats||{}) if (+k.slice(1)!==mySeat) return room.seats[k].name; return '상대'; }
+const sideOf = (st, seat) => st.white===seat ? 0 : 1;
+if (window.NET) NET.clock({
+  state: ()=> (G && G.mode==='online' && screen==='game' && netReady()) ? { tl:netTl, ts:netTs, active: !G.over && !ending, mine: P.turn===G.human, key: G.round+':'+G.moves.length } : null,
+  mineOut: ()=>{ toast('시간이 다 됐어요 — 시간 초과 패'); netEnd(1-G.human, 'time'); },
+  theirsOut: ()=>{ toast('상대가 시간을 넘겼어요 — 시간 초과 승'); netEnd(G.human, 'time'); }
+});
+function netStart(room, seat){
+  const st = parseSt(room);
+  if (room.host===NET.uid && !st.moves){
+    const o = room.opts||{}; const white = o.side===0 ? 0 : o.side===1 ? 1 : (Math.random()<.5?0:1);
+    NET.commit(NG, room.code, room.seq||0, cur=>{ const s=parseSt(cur); if (s.moves) return undefined; cur.st = JSON.stringify({ moves:[], white, round:1, ts:NET.now() }); return cur; });
+  }
+  newOnline(room, seat, st.moves ? st : null);
+}
+function newOnline(room, seat, st){
+  netStop(); token++; thinking=false; $('think').hidden=true;
+  const o = room.opts||{};
+  const human = st ? sideOf(st, seat) : (seat===0 ? (o.side===1?1:0) : (o.side===1?0:1));
+  if (G && !G.over && G.mode==='ai' && G.moves.length>4) logResult(1-G.human, 'quit');
+  G = { mode:'online', code:room.code, seat, level:0, human, opp: oppName(room, seat), round: st ? st.round : 1, moves: st ? st.moves.slice() : [], hints:0, undos:0, over:false };
+  netRoom = room; netSt = st; sel=-1; hint=null; anim=null; ending=false; build(); save(); openGame();
+}
+const netSeq = () => netRoom ? (netRoom.seq||0) : 0;
+function netWatch(){
+  if (netOn || !window.NET) return; netOn = true;
+  const code = G.code, seat = G.seat;
+  NET.presence(NG, code).then(f=>{ netPres = f; }).catch(()=>{});
+  NET.watch(NG, code, room=>{
+    if (!G || G.mode!=='online' || G.code!==code || !room) return;
+    netRoom = room; G.opp = oppName(room, seat);
+    const st = parseSt(room); if (!st.moves){ if (screen==='game') renderGame(); return; }
+    netSt = st; netTs = st.ts || 0; netTl = (room.opts && room.opts.tl) || 0;
+    const mySide = sideOf(st, seat);
+    if (st.round!==G.round || G.human!==mySide){
+      const newRound = st.round!==G.round;
+      Object.assign(G, { round:st.round, human:mySide, moves:st.moves.slice() });
+      if (newRound) Object.assign(G, { over:false, logged:false, winner:null });
+      build(); anim=null; sel=-1; ending=false; save();
+      if (newRound){ show('game'); toast('새 판 시작! 이번엔 '+SIDE[G.human]+'이에요'); }
+      if (screen==='game') renderGame(); return; }
+    const same = G.moves.every((m,i)=>st.moves[i]===m);
+    if (st.moves.length > G.moves.length && same){
+      for (let i=G.moves.length;i<st.moves.length;i++){ const m = st.moves[i];
+        if (i===st.moves.length-1 && screen==='game') doMove(m);
+        else { C.makeMove(P, m); G.moves.push(m); } }
+      save();
+      if (screen!=='game' && !G.over){ const s2 = C.status(P); if (s2!=='play') finishByStatus(s2); }
+    } else if (!same || st.moves.length < G.moves.length){ G.moves = st.moves.slice(); build(); sel=-1; save(); if (screen==='game') renderGame(); }
+    else if (screen==='game') renderGame();
+    if (st.draw!=null && st.draw!==seat && !G.over && st.drawAt===st.moves.length && G.drawSeen!==G.round+':'+st.drawAt){ G.drawSeen = G.round+':'+st.drawAt;
+      ask('무승부 제안', (G.opp||'상대')+' 님이 무승부를 제안했어요. 받아들일까요?', '받아들이기', ()=>netEnd(null, 'agree'));
+    }
+    if (st.end && !G.over){ toast(st.end.how==='resign' ? (st.end.winner===G.human?'상대가 기권했어요':'기권했어요') : st.end.how==='time' ? (st.end.winner===G.human?'상대 시간 초과로 이겼어요':'시간 초과로 졌어요') : st.end.how==='agree' ? '무승부로 끝났어요' : ''); closeAll(); endGame(st.end.winner, st.end.how); }
+  }).then(f=>{ if (netOn) netStopFn = f; else f(); });
+}
+function netSend(m){
+  const n = G.moves.length - 1;
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (!s.moves || s.moves.length!==n) return undefined; s.moves.push(m); s.ts = NET.now(); delete s.draw; cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>{ if (!ok){ toast('연결이 엇갈려 다시 맞췄어요'); netStop(); netWatch(); } }).catch(()=>toast('인터넷 연결을 확인해 주세요'));
+}
+function netEnd(winner, how){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (s.end) return undefined; s.end = { winner, how }; cur.st=JSON.stringify(s); return cur; }).catch(()=>{});
+  endGame(winner, how);
+}
+function netOfferDraw(){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (s.end) return undefined; s.draw = G.seat; s.drawAt = s.moves.length; cur.st=JSON.stringify(s); return cur; })
+    .then(ok=>toast(ok ? '무승부를 제안했어요. 상대 답을 기다려요' : '다시 시도해 주세요'));
+}
+function netRematch(){
+  NET.commit(NG, G.code, netSeq(), cur=>{ const s=parseSt(cur); if (s.round!==G.round) return cur; cur.st = JSON.stringify({ moves:[], white: 1-(s.white||0), round:(s.round||1)+1, ts:NET.now() }); return cur; })
+    .then(ok=>{ if (!ok) toast('다시 시도해 주세요'); });
+}
+const NETCFG = {
+  game: NG, title:'체스', max:2, timeChoices:[0,30,60,180],
+  optsHTML: '<span class="nt-lbl">내 색</span><div class="nt-chips" id="ncS"><button data-v="0">백 (먼저)</button><button data-v="1">흑</button><button data-v="2">무작위</button></div>',
+  bindOpts(){ const o = Object.assign({ s:0 }, store.get('netopt',{}));
+    document.querySelectorAll('#ncS button').forEach(b=>{ b.setAttribute('aria-pressed', String(+b.dataset.v===o.s)); b.onclick=()=>{ o.s=+b.dataset.v; store.set('netopt',o); NETCFG.bindOpts(); }; }); },
+  getOpts(){ const o = Object.assign({ s:0 }, store.get('netopt',{})); return { opts:{ side:o.s }, seat:0 }; },
+  describe: o => '방장 '+(o.side===0?'백':o.side===1?'흑':'무작위'),
+  seatName: s => s===0 ? '방장' : '',
+  onStart: (room, seat) => { closeAll(); netStart(room, seat); }
+};
+if (window.NET){ $('goOnline').hidden = false; $('goOnline').onclick = ()=>NET.open(NETCFG);
+  const lc = NET.linkCode(); if (lc){ NET.clearLink(); setTimeout(()=>NET.open(NETCFG, lc), 300); } }
+
+// ---------- 배우기 ----------
+let LI=0, LP=null, Lsel=-1, Ldone=false, Lanim=null;
+const sqOf = n => C.sq(n.charCodeAt(0)-97, +n[1]-1);
+function renderLessons(){
+  $('lessonList').innerHTML = CLESSONS.map((l,i)=>'<button class="lrow'+(rec.lessons[i]?' done':'')+'" data-i="'+i+'"><span class="no">'+(rec.lessons[i]?'✓':i+1)+'</span><span style="flex-grow:1"><b style="font-family:var(--serif)">'+l.title+'</b></span><span class="muted">›</span></button>').join('');
+  document.querySelectorAll('.lrow').forEach(b=>b.onclick=()=>openLesson(+b.dataset.i));
+}
+function openLesson(i){
+  LI=i; const les=CLESSONS[i]; LP = C.fromFEN(les.fen); Lsel=-1; Ldone=false; Lanim=null;
+  $('lTitle').textContent=les.title; $('lNo').textContent=(i+1)+'/'+CLESSONS.length; $('lText').textContent=les.text;
+  $('lFeed').hidden=true; $('lRetry').hidden = les.type==='finish';
+  $('lNext').textContent = les.type==='finish' ? '초급 AI와 대국' : i===CLESSONS.length-1 ? '목록으로' : '다음 강';
+  $('lBoard').hidden = les.type==='finish';
+  show('lesson'); drawLesson();
+}
+function drawLesson(){
+  const les = CLESSONS[LI]; const last = LP.hist.length ? LP.hist[LP.hist.length-1].m : null;
+  const dots = Lsel>=0 ? C.legalMoves(LP).filter(m=>C.mFrom(m)===Lsel).map(m=>C.mTo(m)) : null;
+  const marks = (les.stars && !Ldone) ? les.stars.map(n=>({ s:sqOf(n), kind:'star' })) : [];
+  drawBoard($('lBoard'), LP, { sel:Lsel, dots, marks, lastFrom:last!=null?C.mFrom(last):null, lastTo:last!=null?C.mTo(last):null, check: C.inCheck(LP, LP.turn) ? LP.kings[LP.turn] : null, anim:Lanim });
+  if (Lanim) Lanim.until = 0;
+}
+function feed(good, t){ const f=$('lFeed'); f.hidden=false; f.className='feedback '+(good?'good':'bad'); f.textContent=t; }
+function lessonOk(){ Ldone=true; rec.lessons[LI]=1; store.set('rec',rec); feed(true, CLESSONS[LI].ok); }
+function lessonCheck(m){
+  const les = CLESSONS[LI], to = C.mTo(m), fl = C.mFlags(m);
+  if (les.type==='reach') return les.stars.map(sqOf).includes(to);
+  if (les.type==='piece') return C.type(LP.b[C.mFrom(m)])===C.K;
+  if (les.goal==='escape') return true;
+  if (les.goal==='castle') return !!(fl & C.FL_CASTLE);
+  if (les.goal==='ep') return !!(fl & C.FL_EP);
+  if (les.goal==='promo') return !!C.mPromo(m);
+  if (les.goal==='mate'){ C.makeMove(LP, m); const ok = C.status(LP)==='mate'; C.undoMove(LP); return ok; }
+  return false;
+}
+function lessonMove(m){
+  if (!lessonCheck(m)){ feed(false, CLESSONS[LI].bad || '다시 해보세요.'); Lsel=-1; drawLesson(); return; }
+  const from=C.mFrom(m), to=C.mTo(m), capSq = (C.mFlags(m)&C.FL_EP) ? to-16 : to, capP = LP.b[capSq];
+  const cap = C.makeMove(LP, m); Lanim = { from, to, cap: capP||0, capSq, until: Date.now()+700 }; Lsel=-1; clack(!!cap);
+  drawLesson(); lessonOk();
+}
+$('lBoard').addEventListener('click', e=>{
+  if (Ldone) return;
+  const s = sqFrom($('lBoard'), e, false); if (s<0) return;
+  const p = LP.b[s];
+  if (Lsel>=0){
+    const cands = C.legalMoves(LP).filter(m=>C.mFrom(m)===Lsel && C.mTo(m)===s);
+    if (cands.length){ if (cands.length>1){ const q = cands.find(m=>C.mPromo(m)===C.Q); lessonMove(q||cands[0]); } else lessonMove(cands[0]); return; }
+    if (p && C.color(p)===LP.turn){ Lsel=s; drawLesson(); return; }
+    Lsel=-1; drawLesson(); feed(false, CLESSONS[LI].bad || '그 말은 거기로 못 가요.'); return;
+  }
+  if (p && C.color(p)===LP.turn){ Lsel=s; drawLesson(); }
+  else if (p) feed(false, '내(백) 말을 먼저 눌러요.');
+});
+$('lRetry').onclick = ()=>openLesson(LI);
+$('lNext').onclick = ()=>{ const les=CLESSONS[LI]; if (les.type==='finish'){ rec.lessons[LI]=1; store.set('rec',rec); newGame('ai',0,0); return; } if (LI<CLESSONS.length-1) openLesson(LI+1); else show('learn'); };
+$('lBack').onclick = ()=>show('learn');
+
+// ---------- 기록 ----------
+function when(ts){ const d=new Date(ts), p=n=>(n<10?'0':'')+n; return (d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function renderRecords(){
+  const ai = rec.games.filter(g=>g.mode==='ai');
+  let h = '<div class="card"><div class="grade"><div><div class="lbl">내 기력</div><div class="g">'+gradeName(rec.grade)+'</div></div><div class="muted" style="font-size:13px">AI 대국 '+ai.length+'판 · 배우기 '+Object.keys(rec.lessons).length+'/'+CLESSONS.length+'강</div></div></div>';
+  h += '<div class="grid3">'+[0,1,2].map(lv=>{ const g=ai.filter(x=>x.level===lv), w=g.filter(x=>x.result==='win').length, l=g.filter(x=>x.result==='lose').length; return '<div class="stat"><span>'+LVN[lv]+'</span><b>'+w+'승 '+l+'패</b><span>'+(g.length?Math.round(w/g.length*100)+'%':'-')+'</span></div>'; }).join('')+'</div>';
+  if (rec.games.length) h += '<div class="hist">'+rec.games.slice(0,60).map(g=>{
+    const res = g.mode==='pvp' ? '<span class="tag draw">'+(g.winner==null?'무':SIDE[g.winner]+' 승')+'</span>' : '<span class="tag '+g.result+'">'+({win:'승',lose:'패',draw:'무'})[g.result]+'</span>';
+    const who = g.mode==='pvp' ? '둘이서' : g.mode==='online' ? '온라인'+(g.opp?' · '+String(g.opp).replace(/[<>&]/g,'')+' 님':'') : 'AI '+LVN[g.level];
+    return '<div>'+res+'<span style="flex-grow:1">'+who+(g.mode!=='pvp'?' · 나는 '+SIDE[g.human]:'')+' · '+Math.ceil(g.moves/2)+'수<br><span class="muted" style="font-size:12px">'+when(g.t)+(g.change?(g.change>0?' · ▲1급':' · ▼1급'):'')+'</span></span><span class="muted">'+(HOW[g.how]||'')+'</span></div>'; }).join('')+'</div>';
+  else h += '<div class="card muted" style="text-align:center">아직 대국 기록이 없어요</div>';
+  $('recBody').innerHTML = h;
+}
+
+// ---------- 설정 ----------
+function renderSettings(){ document.querySelectorAll('[data-set]').forEach(b=>b.setAttribute('aria-checked', String(!!settings[b.dataset.set]))); }
+$('openSettings').onclick = ()=>{ renderSettings(); $('settings').classList.add('on'); };
+document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{ const k=b.dataset.set; settings[k]=!settings[k]; store.set('settings',settings); renderSettings(); });
+
+show('home');
+window.__ch = { get G(){ return G; }, get P(){ return P; }, get thinking(){ return thinking; }, get ending(){ return ending; }, newGame, openLesson, show, get rec(){ return rec; }, get sel(){ return sel; }, get LP(){ return LP; }, tryMove };
+})();
+</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});</script>
+</body>
+</html>
